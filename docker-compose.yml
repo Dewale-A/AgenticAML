@@ -1,0 +1,19 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8003:8003"
+    volumes:
+      - aml_data:/app/data
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  aml_data:
+    driver: local
