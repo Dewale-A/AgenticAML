@@ -1,11 +1,34 @@
 """
 Agent 4: Pattern Analyzer
-Uses LLM reasoning (when available) or rule-based logic to detect complex
-money laundering patterns. Covers behavioral anomalies, network analysis,
-and typology matching.
 
-In demo mode (no OPENAI_API_KEY): uses rule-based pattern detection only.
-With OPENAI_API_KEY: augments rule-based with LLM narrative analysis.
+Analyses customer transaction history to detect complex money laundering
+patterns that rule-based threshold checks cannot catch on a single transaction.
+
+This agent runs a 90-day lookback (the FATF-recommended behavioural window)
+and applies multiple pattern detectors simultaneously to build a multi-signal
+risk picture.
+
+Two operating modes:
+- Rule-based (always active): deterministic pattern detectors for known
+  FATF/GIABA ML typologies. Runs in milliseconds with no external dependencies.
+- LLM-augmented (when OPENAI_API_KEY is set): GPT-4o provides narrative
+  reasoning and can surface emerging patterns not yet in the rule set.
+  The LLM reasoning chain is logged to the audit trail for explainability.
+
+FATF typologies covered:
+  structuring_smurfing    — multiple cash txns just below reporting threshold
+  layering                — rapid multi-channel fund movement to obscure origin
+  layering_circular       — funds sent out and returned from same counterparty
+  geographic_anomaly      — transactions from high-risk or unusual jurisdictions
+  behavioral_anomaly      — unusual transaction times or patterns
+  structuring             — round-amount pattern at NGN 1M+ scale
+  pep_corruption          — PEP + large round-figure inflows from contractors
+
+The overall_risk output drives downstream SAR generation:
+  critical → mandatory SAR assessment (CBN mandates immediate action)
+  high     → senior analyst review required
+  medium   → enhanced monitoring
+  low      → standard monitoring
 """
 
 from __future__ import annotations
@@ -23,6 +46,9 @@ from src.models import PatternAnalyzerResult, PatternMatch
 
 WAT = timezone(timedelta(hours=1))
 
+# Optional LLM augmentation. Loaded at __init__ time so the agent can fall
+# back gracefully to rule-based analysis if the API key is absent or if
+# the langchain import fails (e.g., missing package in deployment).
 OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
 
 
@@ -31,12 +57,18 @@ class PatternAnalyzerAgent:
 
     def __init__(self, db: aiosqlite.Connection):
         self.db = db
+        # LLM is initialised once per agent instance (not per analysis call)
+        # to avoid repeated API client setup overhead in the hot path.
         self._llm = None
         if OPENAI_KEY:
             try:
                 from langchain_openai import ChatOpenAI
+                # temperature=0 ensures deterministic, fact-focused analysis
+                # rather than creative generation — appropriate for compliance.
                 self._llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=OPENAI_KEY)
             except Exception:
+                # If LangChain is not installed or the key is invalid,
+                # fall back to rule-based only without crashing.
                 self._llm = None
 
     async def analyze(
@@ -45,17 +77,26 @@ class PatternAnalyzerAgent:
         transaction_id: Optional[str] = None,
         alert_summaries: Optional[List[Dict]] = None,
     ) -> PatternAnalyzerResult:
-        """
-        Analyze transaction patterns for a customer.
-        Logs reasoning chain to audit trail before returning.
+        """Analyse transaction patterns for a customer over a 90-day window.
+
+        Analysis steps:
+        1. Fetch the customer profile, 90 days of transactions, and existing alerts.
+        2. Run all rule-based pattern detectors (always executed).
+        3. Optionally augment with LLM narrative analysis if API key is set.
+        4. Assess overall risk level from detected patterns.
+        5. Generate recommended actions for the compliance analyst.
+        6. Build a supporting evidence summary.
+        7. Log the reasoning chain to the audit trail before returning.
         """
         customer = await get_customer(self.db, customer_id)
+        # 90-day window is the standard FATF behavioural analysis period
         transactions = await get_customer_transactions(self.db, customer_id, days=90)
         alerts = await list_alerts(self.db, customer_id=customer_id, limit=50)
 
         patterns: List[PatternMatch] = []
 
-        # Rule-based pattern detection (always runs)
+        # Rule-based pattern detection always runs — provides a deterministic
+        # baseline that works in all environments and produces auditable results.
         patterns += self._detect_structuring_pattern(transactions)
         patterns += self._detect_rapid_movement(transactions)
         patterns += self._detect_geographic_anomaly(transactions)
@@ -64,21 +105,28 @@ class PatternAnalyzerAgent:
         patterns += self._detect_round_amount_pattern(transactions)
         patterns += self._detect_layering(transactions)
 
+        # PEP-specific pattern detection — only triggered if customer is a PEP.
+        # PEPs have a higher baseline for what constitutes suspicious activity;
+        # even legal government contractor payments may warrant SAR consideration.
         if customer:
             patterns += self._detect_pep_patterns(customer, transactions)
 
-        # LLM augmentation if available
+        # LLM augmentation: adds narrative context and may catch patterns
+        # that the rule set hasn't explicitly enumerated. The LLM output is
+        # incorporated into the evidence summary, not used to modify the
+        # detected patterns list (rule-based findings are the primary signal).
         llm_evidence = ""
         if self._llm and (transactions or alerts):
             llm_evidence = await self._llm_analyze(customer, transactions, alerts, patterns)
 
-        # Overall risk assessment
+        # Overall risk is the worst-case across all detected patterns
         overall_risk = self._assess_overall_risk(patterns, customer, transactions)
         recommended_actions = self._recommend_actions(overall_risk, patterns)
-
         supporting_evidence = self._build_evidence_summary(transactions, alerts, patterns, llm_evidence)
 
-        # MANDATORY: Log reasoning chain to audit trail before returning
+        # MANDATORY: Log the reasoning chain to the audit trail before returning.
+        # The patterns_detected, overall_risk, and recommended_actions are all
+        # logged so the compliance decision chain is fully reconstructable.
         await log_agent_decision(
             db=self.db,
             agent_name=self.name,
@@ -109,9 +157,17 @@ class PatternAnalyzerAgent:
     # ------------------------------------------------------------------
 
     def _detect_structuring_pattern(self, txns: List[Dict]) -> List[PatternMatch]:
-        """Detect smurfing: multiple transactions just below NGN 5M threshold."""
+        """Detect smurfing: multiple cash transactions just below the NGN 5M threshold.
+
+        Three or more qualifying transactions is the minimum to distinguish
+        a pattern from coincidence. The 90%-of-threshold band (NGN 4.5M–4.99M)
+        aligns with FATF's definition of structuring behaviour.
+
+        Confidence scales with the number of hits: more transactions in the
+        structuring band = higher certainty that the behaviour is intentional.
+        """
         threshold = 5_000_000
-        lower = threshold * 0.9
+        lower = threshold * 0.9  # NGN 4.5M lower bound
         hits = [
             t for t in txns
             if lower <= float(t.get("amount", 0)) < threshold
@@ -133,24 +189,35 @@ class PatternAnalyzerAgent:
         return []
 
     def _detect_rapid_movement(self, txns: List[Dict]) -> List[PatternMatch]:
-        """Detect rapid fund movement: large inflows quickly followed by outflows."""
+        """Detect rapid fund movement: large inflows quickly followed by outflows.
+
+        Classic layering indicator: funds arrive (placement) and are quickly
+        dispersed (layering) to obscure the origin. The 48-hour window is
+        used because legitimate business disbursements rarely happen within
+        hours of receipt at the NGN 1M+ scale.
+
+        Two or more rapid sequences is the trigger threshold to avoid false
+        positives from legitimate same-day settlement patterns.
+        """
         if len(txns) < 4:
             return []
 
         sorted_txns = sorted(txns, key=lambda t: t.get("timestamp", ""))
+        # Only consider substantial movements (≥NGN 1M) to filter out noise
         inflows = [t for t in sorted_txns if t.get("direction") == "inbound" and float(t.get("amount", 0)) >= 1_000_000]
         outflows = [t for t in sorted_txns if t.get("direction") == "outbound" and float(t.get("amount", 0)) >= 1_000_000]
 
         if not inflows or not outflows:
             return []
 
-        # Check for rapid sequences within 48 hours
+        # Find inflow→outflow pairs within 48 hours
         rapid_sequences = []
         for inflow in inflows:
             in_ts = self._parse_ts(inflow.get("timestamp", ""))
             for outflow in outflows:
                 out_ts = self._parse_ts(outflow.get("timestamp", ""))
                 diff_hours = abs((out_ts - in_ts).total_seconds()) / 3600
+                # 0 < diff_hours ≤ 48: outflow after inflow within 48 hours
                 if 0 < diff_hours <= 48:
                     rapid_sequences.append((inflow, outflow, diff_hours))
 
@@ -171,7 +238,16 @@ class PatternAnalyzerAgent:
         return []
 
     def _detect_geographic_anomaly(self, txns: List[Dict]) -> List[PatternMatch]:
-        """Detect geographic anomalies: transactions from multiple distant locations."""
+        """Detect geographic anomalies: transactions from many different locations.
+
+        Five or more distinct locations is suspicious for a retail Nigerian
+        customer (legitimate business accounts are expected to have higher
+        geographic dispersion). High-risk jurisdictions in the mix elevate
+        the confidence score significantly.
+
+        High-risk codes: IR=Iran, KP=North Korea, SY=Syria, CU=Cuba, SD=Sudan
+        (FATF high-risk/under increased monitoring jurisdictions).
+        """
         locations = [t.get("geo_location", "") for t in txns if t.get("geo_location")]
         if len(set(locations)) >= 5:
             high_risk_locs = [loc for loc in locations if any(
@@ -199,13 +275,23 @@ class PatternAnalyzerAgent:
         return []
 
     def _detect_time_anomaly(self, txns: List[Dict]) -> List[PatternMatch]:
-        """Detect unusual transaction times (midnight to 5am WAT)."""
+        """Detect unusual transaction times: midnight to 5am WAT.
+
+        Five or more transactions in the 00:00–05:00 WAT window is anomalous
+        for a retail customer. Automated ML layering operations and overseas
+        principals directing money mules often transact during Nigerian
+        nighttime when human oversight is reduced.
+
+        The 5-transaction minimum avoids flagging occasional legitimate
+        late-night or early-morning transactions (e.g., travel, emergencies).
+        """
         unusual = []
         for t in txns:
             try:
                 ts = datetime.fromisoformat(t.get("timestamp", ""))
                 if ts.tzinfo is None:
                     ts = ts.replace(tzinfo=WAT)
+                # 00:00 to 05:00 WAT is the suspicious window
                 if 0 <= ts.hour < 5:
                     unusual.append(t)
             except (ValueError, TypeError):
@@ -226,7 +312,17 @@ class PatternAnalyzerAgent:
         return []
 
     def _detect_circular_transactions(self, txns: List[Dict]) -> List[PatternMatch]:
-        """Detect circular fund flows: money sent out and returned from same counterparty."""
+        """Detect circular fund flows: money sent out and returned from same counterparty.
+
+        Circular transactions obscure the origin of funds by creating a
+        paper trail of apparent 'activity' between two parties who are
+        actually just cycling the same funds. The 0.7 ratio threshold means
+        inflows and outflows with the same counterparty are within 30% of
+        each other — indicating the same money is going back and forth.
+
+        Minimum NGN 500K per direction filters out routine small-value
+        reciprocal payments (e.g., splitting bills, petty cash).
+        """
         counterparties: Dict[str, Dict] = {}
         for t in txns:
             cp = t.get("counterparty_account", "") or t.get("counterparty_name", "")
@@ -244,6 +340,7 @@ class PatternAnalyzerAgent:
         circular = [
             cp for cp, flows in counterparties.items()
             if flows["inbound"] > 500_000 and flows["outbound"] > 500_000
+            # Ratio ≥ 0.7 means the smaller amount is at least 70% of the larger
             and min(flows["inbound"], flows["outbound"]) / max(flows["inbound"], flows["outbound"]) >= 0.7
         ]
 
@@ -260,7 +357,13 @@ class PatternAnalyzerAgent:
         return []
 
     def _detect_round_amount_pattern(self, txns: List[Dict]) -> List[PatternMatch]:
-        """Detect pattern of repeated round-number transactions (classic ML indicator)."""
+        """Detect a pattern of repeated round-number transactions (classic ML indicator).
+
+        Five or more transactions that are exact multiples of NGN 1M strongly
+        suggests deliberate structuring — legitimate commercial payments rarely
+        land on exactly round figures at this scale. This complements the
+        single-transaction ROUND_AMOUNT rule in the transaction monitor.
+        """
         round_txns = [
             t for t in txns
             if float(t.get("amount", 0)) >= 1_000_000
@@ -282,7 +385,17 @@ class PatternAnalyzerAgent:
         return []
 
     def _detect_layering(self, txns: List[Dict]) -> List[PatternMatch]:
-        """Detect layering: many small transactions through different channels."""
+        """Detect layering: many small transactions through many different channels.
+
+        Layering through channel diversity (4+ different payment channels)
+        with low average transaction amounts (below NGN 2M) and high
+        frequency (15+ transactions) is a known ML indicator. The pattern
+        suggests deliberately routing funds through multiple channels to
+        complicate tracing.
+
+        The thresholds (4 channels, NGN 2M avg, 15 transactions) are calibrated
+        to avoid flagging legitimate SMEs who naturally use multiple channels.
+        """
         if len(txns) < 10:
             return []
         channels = [t.get("channel", "") for t in txns]
@@ -303,10 +416,19 @@ class PatternAnalyzerAgent:
         return []
 
     def _detect_pep_patterns(self, customer: Dict, txns: List[Dict]) -> List[PatternMatch]:
-        """Detect PEP-related corruption patterns."""
+        """Detect PEP-related corruption patterns: large round-figure inflows from contractors.
+
+        A PEP receiving multiple large round-figure transfers from entities
+        described as 'government contractors' is a classic bribery/corruption
+        indicator per FATF Recommendation 12. The pattern is defined as:
+        - Customer is a PEP (pep_status=1)
+        - One or more inflows ≥ NGN 10M that are exact multiples of NGN 5M
+          (round figures at this scale are unusual for legitimate business)
+        """
         if not customer.get("pep_status"):
             return []
 
+        # Look for large round figures: multiples of NGN 5M, at least NGN 10M
         large_round_txns = [
             t for t in txns
             if float(t.get("amount", 0)) >= 10_000_000
@@ -339,7 +461,17 @@ class PatternAnalyzerAgent:
         alerts: List[Dict],
         rule_patterns: List[PatternMatch],
     ) -> str:
-        """Call LLM to augment rule-based analysis with narrative reasoning."""
+        """Call GPT-4o to augment rule-based analysis with narrative reasoning.
+
+        The LLM is given the rule-based findings as context so it can focus
+        on patterns not yet captured by the rules rather than repeating them.
+        The prompt limits the response to 200 words to keep the output
+        focused and audit-trail friendly (verbose LLM outputs are harder
+        to review for compliance examiners).
+
+        Only the last 30 transactions are included in the prompt to stay
+        within practical context limits and to focus the LLM on recent behaviour.
+        """
         if not self._llm:
             return ""
 
@@ -351,6 +483,8 @@ Analyze the provided transaction data and identify money laundering patterns.
 Focus on: structuring, layering, integration, trade-based ML, PEP corruption.
 Be concise. Output only the key findings and reasoning chain for the audit log."""
 
+            # Summarise transactions to reduce token usage while preserving
+            # the key fields needed for pattern analysis
             txn_summary = json.dumps([
                 {
                     "id": t["id"][:8],
@@ -361,7 +495,7 @@ Be concise. Output only the key findings and reasoning chain for the audit log."
                     "geo": t.get("geo_location"),
                     "date": t.get("timestamp", "")[:10],
                 }
-                for t in txns[:30]
+                for t in txns[:30]  # Cap at 30 to control token usage
             ], indent=2)
 
             rule_findings = [f"{p.pattern_name}: {p.description}" for p in rule_patterns]
@@ -378,6 +512,7 @@ Provide your AML analysis reasoning (max 200 words):"""
             response = await self._llm.ainvoke(messages)
             return str(response.content)
         except Exception as e:
+            # LLM failure should never crash the pipeline — fall back gracefully
             return f"LLM analysis unavailable: {str(e)}"
 
     # ------------------------------------------------------------------
@@ -387,6 +522,19 @@ Provide your AML analysis reasoning (max 200 words):"""
     def _assess_overall_risk(
         self, patterns: List[PatternMatch], customer: Optional[Dict], txns: List[Dict]
     ) -> str:
+        """Determine the overall risk level from the detected pattern set.
+
+        Risk escalation logic:
+        - critical: 4+ patterns detected, OR a high-risk typology with 80%+ confidence
+          (either condition is sufficient for mandatory CBN escalation)
+        - high: 3+ patterns, OR a high-risk typology at 65%+ confidence
+        - medium: at least 1 pattern, OR max confidence ≥ 0.5
+        - low: no patterns and no transactions to analyse
+
+        High-risk typologies are those that directly correspond to FATF priority
+        typologies for Nigerian financial institutions: structuring, layering,
+        and PEP corruption.
+        """
         if not patterns and not txns:
             return "low"
 
@@ -403,6 +551,13 @@ Provide your AML analysis reasoning (max 200 words):"""
         return "low"
 
     def _recommend_actions(self, risk_level: str, patterns: List[PatternMatch]) -> List[str]:
+        """Generate recommended actions for the compliance analyst.
+
+        Actions are tiered by risk level (mandatory escalation actions first)
+        and then supplemented with typology-specific investigative steps.
+        These recommendations are included in the case description and SAR
+        supporting evidence to guide the analyst's investigation.
+        """
         actions = []
         if risk_level == "critical":
             actions += [
@@ -425,6 +580,7 @@ Provide your AML analysis reasoning (max 200 words):"""
         else:
             actions.append("Continue standard monitoring")
 
+        # Typology-specific investigative steps
         typologies = {p.typology for p in patterns}
         if "structuring_smurfing" in typologies:
             actions.append("Investigate linked accounts for coordinated structuring")
@@ -441,6 +597,13 @@ Provide your AML analysis reasoning (max 200 words):"""
         patterns: List[PatternMatch],
         llm_evidence: str,
     ) -> str:
+        """Build a human-readable evidence summary for the SAR supporting evidence section.
+
+        The summary is structured to be easily read by a compliance analyst
+        reviewing the SAR draft: transaction scope first, then patterns,
+        then optional LLM analysis truncated to 300 characters to avoid
+        overwhelming the SAR narrative with LLM verbosity.
+        """
         lines = [
             f"Transactions analyzed: {len(txns)} (90-day window)",
             f"Alerts reviewed: {len(alerts)}",
@@ -453,6 +616,14 @@ Provide your AML analysis reasoning (max 200 words):"""
         return "\n".join(lines)
 
     def _compute_confidence(self, patterns: List[PatternMatch], txns: List[Dict]) -> float:
+        """Compute the overall confidence of the pattern analysis result.
+
+        No transactions: 0.5 (uncertain — no data to analyse).
+        No patterns: 0.85 (high confidence in a clean result — we searched
+        comprehensively and found nothing).
+        Patterns detected: confidence equals the highest individual pattern
+        confidence (the strongest signal sets the overall certainty).
+        """
         if not txns:
             return 0.5
         if not patterns:
@@ -460,6 +631,7 @@ Provide your AML analysis reasoning (max 200 words):"""
         return min(0.95, max(p.confidence for p in patterns))
 
     def _parse_ts(self, ts_str: str) -> datetime:
+        """Parse an ISO timestamp, defaulting to now() on failure."""
         try:
             ts = datetime.fromisoformat(ts_str)
             if ts.tzinfo is None:
@@ -469,6 +641,11 @@ Provide your AML analysis reasoning (max 200 words):"""
             return datetime.now(WAT)
 
     def _date_range(self, txns: List[Dict]) -> str:
+        """Return a human-readable date range string for a list of transactions.
+
+        Used in pattern descriptions so analysts can quickly see the temporal
+        span of detected activity without querying the database.
+        """
         dates = sorted(t.get("timestamp", "")[:10] for t in txns if t.get("timestamp"))
         if not dates:
             return "unknown date range"

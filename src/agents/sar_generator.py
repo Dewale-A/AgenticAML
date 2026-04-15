@@ -1,7 +1,27 @@
 """
 Agent 5: SAR Generator
-Drafts Suspicious Activity Reports (SAR/STR) in NFIU format.
-GOVERNANCE: SAR filing ALWAYS requires human approval. Never auto-file.
+
+Drafts Suspicious Activity Reports (SAR/STR) in NFIU-compliant format.
+
+GOVERNANCE CONSTRAINT: This agent ONLY creates DRAFT reports. It CANNOT
+file a report with the NFIU. Every SAR created by this agent is in
+'draft' status and requires human approval before its status can be
+advanced to 'approved' or 'filed'. This is enforced by:
+1. Always setting status='draft' in the created SAR record.
+2. The governance engine's human_in_the_loop gate (runs after this agent).
+3. The API layer rejecting /sars/{id}/file requests unless status='approved'.
+
+Two narrative generation modes:
+- LLM-based (OPENAI_API_KEY set): GPT-4o generates a professional NFIU-format
+  narrative using all available evidence context. Falls back to rule-based
+  if the API call fails.
+- Rule-based (always available): Structured template-based narrative using
+  the agent outputs passed as context. Produces consistent, machine-readable
+  SAR sections that an analyst can review and enhance.
+
+NFIU Filing Deadline: The Money Laundering (Prevention and Prohibition) Act
+2022 requires filing within 24 hours of the initial determination of suspicion.
+This agent includes the deadline notice in every SAR draft.
 """
 
 from __future__ import annotations
@@ -24,6 +44,8 @@ from src.governance.audit import log_agent_decision, log_sar_lifecycle
 from src.models import SarGeneratorResult
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
+# Institution details are injected via environment variables so the same
+# codebase can be deployed at different institutions without code changes.
 INSTITUTION_NAME = os.getenv("INSTITUTION_NAME", "Demo Bank Nigeria Ltd")
 INSTITUTION_CODE = os.getenv("INSTITUTION_CODE", "DEMOBANK001")
 REPORTING_OFFICER = os.getenv("REPORTING_OFFICER", "Chief Compliance Officer")
@@ -34,10 +56,13 @@ class SarGeneratorAgent:
 
     def __init__(self, db: aiosqlite.Connection):
         self.db = db
+        # LLM initialised once per agent instance (see PatternAnalyzerAgent comment)
         self._llm = None
         if OPENAI_KEY:
             try:
                 from langchain_openai import ChatOpenAI
+                # temperature=0.1 gives slight variation to avoid repetitive
+                # boilerplate while staying factual — appropriate for compliance reports.
                 self._llm = ChatOpenAI(model="gpt-4o", temperature=0.1, api_key=OPENAI_KEY)
             except Exception:
                 self._llm = None
@@ -52,27 +77,38 @@ class SarGeneratorAgent:
         kyc_result: Optional[Dict] = None,
         sanctions_result: Optional[Dict] = None,
     ) -> SarGeneratorResult:
+        """Generate a draft SAR/STR and persist it for mandatory human review.
+
+        Generation steps:
+        1. Collect all available context (customer, alert, transaction, prior results).
+        2. Determine the AML typology from the strongest available signal.
+        3. Determine filing priority from risk level and transaction amount.
+        4. Generate a narrative (LLM or rule-based template).
+        5. Persist the draft SAR with status='draft'.
+        6. Log two audit entries: the SAR lifecycle event and the agent decision.
+        7. Return the result with requires_human_approval=True.
+
+        The function ALWAYS returns requires_human_approval=True. There is no
+        code path that creates a SAR in 'approved' or 'filed' status from this agent.
         """
-        Generate a draft SAR/STR. Returns draft for mandatory human approval.
-        Logs to audit trail before returning.
-        """
-        # Collect context
+        # Collect full context for narrative generation
         customer = await get_customer(self.db, customer_id)
         alert = await get_alert(self.db, alert_id) if alert_id else None
         transaction = await get_transaction(self.db, transaction_id) if transaction_id else None
+        # Include recent alerts for context about ongoing suspicious activity
         recent_alerts = await list_alerts(self.db, customer_id=customer_id, limit=10)
 
-        # Determine typology
+        # Determine typology from the highest-confidence signal available
         typology = self._determine_typology(
             pattern_result, monitor_result, sanctions_result, customer
         )
 
-        # Determine priority
+        # Priority drives NFIU filing urgency (critical → immediate action)
         priority = self._determine_priority(
             pattern_result, monitor_result, sanctions_result, transaction
         )
 
-        # Generate narrative
+        # Generate narrative using LLM if available, otherwise use template
         if self._llm:
             narrative = await self._llm_narrative(
                 customer, transaction, alert, recent_alerts,
@@ -84,7 +120,7 @@ class SarGeneratorAgent:
                 pattern_result, monitor_result, kyc_result, sanctions_result, typology
             )
 
-        # Persist draft SAR (status=draft, awaiting human approval)
+        # Persist the draft SAR. Status is always 'draft' — never 'approved'.
         sar_data = {
             "alert_id": alert_id,
             "customer_id": customer_id,
@@ -96,7 +132,10 @@ class SarGeneratorAgent:
         }
         sar = await create_sar(self.db, sar_data)
 
-        # MANDATORY: Log SAR draft to audit trail before returning
+        # MANDATORY: Log SAR draft to the audit trail before returning.
+        # log_sar_lifecycle records the creation event with requires_human_approval=True
+        # so the audit trail explicitly shows that the human approval requirement
+        # was communicated at the time of drafting.
         await log_sar_lifecycle(
             db=self.db,
             sar_id=sar["id"],
@@ -112,6 +151,7 @@ class SarGeneratorAgent:
             },
         )
 
+        # Second audit entry captures the agent decision with governance note
         await log_agent_decision(
             db=self.db,
             agent_name=self.name,
@@ -155,8 +195,22 @@ class SarGeneratorAgent:
         sanctions_result: Optional[Dict],
         typology: str,
     ) -> str:
-        """Generate structured SAR narrative without LLM."""
+        """Generate a structured NFIU-format SAR narrative without an LLM.
+
+        The template follows the NFIU STR format with six mandatory sections:
+        1. Subject Information — customer identity details
+        2. Suspicious Activity Description — typology and transaction details
+        3. Reason for Suspicion — triggered rules and patterns
+        4. Transaction Details — full transaction record
+        5. Supporting Evidence — pattern analysis summary
+        6. Declaration — institution and human approval notice
+
+        The human approval notice in Section 6 is not just boilerplate —
+        it serves as a reminder embedded in the document itself that this
+        draft cannot be submitted to NFIU without officer approval.
+        """
         cname = customer.get("name", "Unknown Customer") if customer else "Unknown Customer"
+        # Truncate customer ID to 8 chars for readability in the SAR narrative
         cid = customer.get("id", "")[:8] if customer else ""
         bvn = customer.get("bvn", "N/A") if customer else "N/A"
         nin = customer.get("nin", "N/A") if customer else "N/A"
@@ -167,6 +221,7 @@ class SarGeneratorAgent:
         if transaction:
             amount_str = f"NGN {float(transaction.get('amount', 0)):,.2f}"
 
+        # Format the list of triggered rules for Section 3
         triggered = ""
         if monitor_result and monitor_result.get("triggered_rules"):
             rules = monitor_result["triggered_rules"]
@@ -175,6 +230,7 @@ class SarGeneratorAgent:
                 for r in rules[:5]
             )
 
+        # Format the list of detected patterns for Section 3
         patterns = ""
         if pattern_result and pattern_result.get("patterns_detected"):
             pats = pattern_result["patterns_detected"]
@@ -232,6 +288,7 @@ DO NOT submit to NFIU without authorised officer approval and signature.
         return narrative.strip()
 
     def _format_transaction_section(self, txn: Optional[Dict]) -> str:
+        """Format the transaction details block for the SAR narrative."""
         if not txn:
             return "No single transaction: see customer alert history."
         return (
@@ -258,7 +315,13 @@ DO NOT submit to NFIU without authorised officer approval and signature.
         sanctions_result: Optional[Dict],
         typology: str,
     ) -> str:
-        """Generate professional SAR narrative using LLM."""
+        """Generate a professional SAR narrative using GPT-4o.
+
+        The LLM is given a structured JSON context containing all available
+        evidence. The system prompt constrains it to factual, professional
+        language in the NFIU STR format. Falls back to the rule-based
+        narrative if the API call fails — the pipeline must always produce a SAR.
+        """
         try:
             from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -268,6 +331,8 @@ Be factual, precise, and professional. Include all relevant sections.
 Use Nigerian banking terminology. Amounts in NGN.
 Mark clearly as DRAFT requiring human approval."""
 
+            # Strip timestamps from customer context to reduce token usage
+            # while preserving all operationally relevant fields
             context = {
                 "customer": {k: v for k, v in (customer or {}).items() if k not in ["created_at", "updated_at"]},
                 "transaction": transaction,
@@ -293,6 +358,8 @@ Mark as DRAFT - Human Approval Required."""
             response = await self._llm.ainvoke(messages)
             return str(response.content)
         except Exception:
+            # Fall back to rule-based narrative — LLM failure must not prevent
+            # SAR generation, as the 24h NFIU deadline cannot be missed.
             return self._rule_based_narrative(
                 customer, transaction, alert, recent_alerts,
                 pattern_result, monitor_result, kyc_result, sanctions_result, typology
@@ -309,6 +376,18 @@ Mark as DRAFT - Human Approval Required."""
         sanctions_result: Optional[Dict],
         customer: Optional[Dict],
     ) -> str:
+        """Select the primary AML typology for the SAR from the available signals.
+
+        Priority order:
+        1. Sanctions-related (most severe — legal obligation to report)
+        2. Pattern-based typology with highest confidence (most specific)
+        3. Rule-based typology from the transaction monitor
+        4. PEP-related if customer is a PEP
+        5. Generic 'suspicious_activity' as last resort
+
+        The typology drives NFIU categorisation and affects how the SAR
+        is handled by the receiving unit.
+        """
         if sanctions_result and sanctions_result.get("overall_recommendation") == "block":
             return "sanctions_related"
         if pattern_result:
@@ -340,6 +419,21 @@ Mark as DRAFT - Human Approval Required."""
         sanctions_result: Optional[Dict],
         transaction: Optional[Dict],
     ) -> str:
+        """Determine the SAR filing priority from the available risk signals.
+
+        Priority mapping:
+        - critical: sanctions block OR critical pattern risk
+          → immediate escalation, same-day NFIU notification required
+        - urgent: very large transaction (≥NGN 50M) OR high pattern risk
+          OR high transaction risk score (≥0.7)
+          → file within 24h (NFIU STR deadline)
+        - routine: all other cases
+          → normal 24h filing process
+
+        The NGN 50M threshold for 'urgent' aligns with the materiality_threshold
+        in ThresholdConfig — transactions above this amount are always treated
+        as high-priority for regulatory purposes.
+        """
         if sanctions_result and sanctions_result.get("overall_recommendation") == "block":
             return "critical"
         if pattern_result and pattern_result.get("overall_risk") == "critical":

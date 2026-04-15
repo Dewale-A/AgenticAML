@@ -1,0 +1,260 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" font-family="Inter, system-ui, sans-serif">
+  <defs>
+    <!-- Gradient definitions for agent pills -->
+    <linearGradient id="gAgent1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gAgent2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gAgent3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gAgent4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gAgent5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DC2626;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gAgent6" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#EC4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DB2777;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gGov" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    </linearGradient>
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#F8FAFC" rx="12"/>
+
+  <!-- Title -->
+  <text x="600" y="45" text-anchor="middle" font-size="22" font-weight="700" fill="#0F172A">AgenticAML: System Architecture</text>
+  <text x="600" y="68" text-anchor="middle" font-size="13" fill="#64748B">AI-Powered AML Compliance for Nigerian Financial Institutions | CBN Baseline Standards 2026</text>
+
+  <!-- ========== INPUT SECTION (Left) ========== -->
+  <rect x="30" y="100" width="170" height="600" rx="12" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="115" y="125" text-anchor="middle" font-size="12" font-weight="600" fill="#475569" letter-spacing="1">DATA SOURCES</text>
+
+  <!-- Input cards -->
+  <rect x="45" y="145" width="140" height="55" rx="8" fill="white" filter="url(#shadow)"/>
+  <circle cx="70" cy="172" r="12" fill="#EFF6FF"/>
+  <text x="70" y="176" text-anchor="middle" font-size="12">💳</text>
+  <text x="92" y="167" font-size="10" font-weight="600" fill="#1E293B">Transaction</text>
+  <text x="92" y="180" font-size="9" fill="#64748B">Feeds (Real-time)</text>
+
+  <rect x="45" y="215" width="140" height="55" rx="8" fill="white" filter="url(#shadow)"/>
+  <circle cx="70" cy="242" r="12" fill="#ECFDF5"/>
+  <text x="70" y="246" text-anchor="middle" font-size="12">👤</text>
+  <text x="92" y="237" font-size="10" font-weight="600" fill="#1E293B">Customer</text>
+  <text x="92" y="250" font-size="9" fill="#64748B">KYC Records</text>
+
+  <rect x="45" y="285" width="140" height="55" rx="8" fill="white" filter="url(#shadow)"/>
+  <circle cx="70" cy="312" r="12" fill="#FEF3C7"/>
+  <text x="70" y="316" text-anchor="middle" font-size="12">🏦</text>
+  <text x="92" y="307" font-size="10" font-weight="600" fill="#1E293B">Core Banking</text>
+  <text x="92" y="320" font-size="9" fill="#64748B">System Integration</text>
+
+  <rect x="45" y="355" width="140" height="55" rx="8" fill="white" filter="url(#shadow)"/>
+  <circle cx="70" cy="382" r="12" fill="#EDE9FE"/>
+  <text x="70" y="386" text-anchor="middle" font-size="12">🌍</text>
+  <text x="92" y="377" font-size="10" font-weight="600" fill="#1E293B">Sanctions Lists</text>
+  <text x="92" y="390" font-size="9" fill="#64748B">OFAC, UN, PEP</text>
+
+  <rect x="45" y="425" width="140" height="55" rx="8" fill="white" filter="url(#shadow)"/>
+  <circle cx="70" cy="452" r="12" fill="#FFF1F2"/>
+  <text x="70" y="456" text-anchor="middle" font-size="12">🆔</text>
+  <text x="92" y="447" font-size="10" font-weight="600" fill="#1E293B">BVN / NIN</text>
+  <text x="92" y="460" font-size="9" fill="#64748B">Identity Databases</text>
+
+  <!-- ========== AGENT PIPELINE (Center) ========== -->
+  <rect x="230" y="100" width="540" height="600" rx="12" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="500" y="125" text-anchor="middle" font-size="12" font-weight="600" fill="#475569" letter-spacing="1">6-AGENT PIPELINE</text>
+
+  <!-- Agent 1: Transaction Monitor -->
+  <rect x="255" y="145" width="230" height="70" rx="24" fill="url(#gAgent1)" filter="url(#shadow)"/>
+  <circle cx="285" cy="180" r="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="285" y="184" text-anchor="middle" font-size="13" fill="white">1</text>
+  <text x="310" y="172" font-size="12" font-weight="600" fill="white">Transaction Monitor</text>
+  <text x="310" y="188" font-size="9" fill="rgba(255,255,255,0.8)">Threshold, velocity, structuring detection</text>
+
+  <!-- Agent 2: KYC Verifier -->
+  <rect x="255" y="230" width="230" height="70" rx="24" fill="url(#gAgent2)" filter="url(#shadow)"/>
+  <circle cx="285" cy="265" r="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="285" y="269" text-anchor="middle" font-size="13" fill="white">2</text>
+  <text x="310" y="257" font-size="12" font-weight="600" fill="white">KYC Verifier</text>
+  <text x="310" y="273" font-size="9" fill="rgba(255,255,255,0.8)">BVN/NIN validation, risk tier assignment</text>
+
+  <!-- Agent 3: Sanctions Screener -->
+  <rect x="255" y="315" width="230" height="70" rx="24" fill="url(#gAgent3)" filter="url(#shadow)"/>
+  <circle cx="285" cy="350" r="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="285" y="354" text-anchor="middle" font-size="13" fill="white">3</text>
+  <text x="310" y="342" font-size="12" font-weight="600" fill="white">Sanctions Screener</text>
+  <text x="310" y="358" font-size="9" fill="rgba(255,255,255,0.8)">OFAC, UN, PEP, adverse media screening</text>
+
+  <!-- Agent 4: Pattern Analyzer -->
+  <rect x="255" y="400" width="230" height="70" rx="24" fill="url(#gAgent4)" filter="url(#shadow)"/>
+  <circle cx="285" cy="435" r="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="285" y="439" text-anchor="middle" font-size="13" fill="white">4</text>
+  <text x="310" y="427" font-size="12" font-weight="600" fill="white">Pattern Analyzer</text>
+  <text x="310" y="443" font-size="9" fill="rgba(255,255,255,0.8)">LLM-powered anomaly and typology detection</text>
+
+  <!-- Agent 5: SAR Generator -->
+  <rect x="255" y="485" width="230" height="70" rx="24" fill="url(#gAgent5)" filter="url(#shadow)"/>
+  <circle cx="285" cy="520" r="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="285" y="524" text-anchor="middle" font-size="13" fill="white">5</text>
+  <text x="310" y="512" font-size="12" font-weight="600" fill="white">SAR Generator</text>
+  <text x="310" y="528" font-size="9" fill="rgba(255,255,255,0.8)">Draft suspicious activity reports (NFIU format)</text>
+
+  <!-- Agent 6: Case Manager -->
+  <rect x="255" y="570" width="230" height="70" rx="24" fill="url(#gAgent6)" filter="url(#shadow)"/>
+  <circle cx="285" cy="605" r="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="285" y="609" text-anchor="middle" font-size="13" fill="white">6</text>
+  <text x="310" y="597" font-size="12" font-weight="600" fill="white">Case Manager</text>
+  <text x="310" y="613" font-size="9" fill="rgba(255,255,255,0.8)">Routing, SLA tracking, regulatory reporting</text>
+
+  <!-- Flow arrows between agents -->
+  <line x1="370" y1="215" x2="370" y2="230" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+  <line x1="370" y1="300" x2="370" y2="315" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="370" y1="385" x2="370" y2="400" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="370" y1="470" x2="370" y2="485" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="370" y1="555" x2="370" y2="570" stroke="#94A3B8" stroke-width="1.5"/>
+
+  <!-- Governance Engine (between agents) -->
+  <rect x="510" y="145" width="245" height="495" rx="12" fill="url(#gGov)" filter="url(#shadow)" opacity="0.95"/>
+  <text x="632" y="172" text-anchor="middle" font-size="12" font-weight="700" fill="#F59E0B" letter-spacing="1">GOVERNANCE ENGINE</text>
+  <text x="632" y="190" text-anchor="middle" font-size="9" fill="#94A3B8">Inline at Every Agent Stage</text>
+
+  <!-- Governance controls -->
+  <rect x="525" y="210" width="215" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="543" cy="226" r="8" fill="#3B82F6"/>
+  <text x="543" y="230" text-anchor="middle" font-size="8" fill="white">✓</text>
+  <text x="560" y="230" font-size="10" fill="#E2E8F0">Confidence Gates</text>
+
+  <rect x="525" y="252" width="215" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="543" cy="268" r="8" fill="#10B981"/>
+  <text x="543" y="272" text-anchor="middle" font-size="8" fill="white">$</text>
+  <text x="560" y="272" font-size="10" fill="#E2E8F0">Materiality Thresholds</text>
+
+  <rect x="525" y="294" width="215" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="543" cy="310" r="8" fill="#EF4444"/>
+  <text x="543" y="314" text-anchor="middle" font-size="8" fill="white">⛔</text>
+  <text x="560" y="314" font-size="10" fill="#E2E8F0">Sanctions Auto-Block</text>
+
+  <rect x="525" y="336" width="215" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="543" cy="352" r="8" fill="#F59E0B"/>
+  <text x="543" y="356" text-anchor="middle" font-size="8" fill="white">👤</text>
+  <text x="560" y="356" font-size="10" fill="#E2E8F0">Human-in-the-Loop (SAR)</text>
+
+  <rect x="525" y="378" width="215" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="543" cy="394" r="8" fill="#8B5CF6"/>
+  <text x="543" y="398" text-anchor="middle" font-size="8" fill="white">⬆</text>
+  <text x="560" y="398" font-size="10" fill="#E2E8F0">Risk-Tiered Escalation</text>
+
+  <rect x="525" y="420" width="215" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="543" cy="436" r="8" fill="#EC4899"/>
+  <text x="543" y="440" text-anchor="middle" font-size="8" fill="white">🔒</text>
+  <text x="560" y="440" font-size="10" fill="#E2E8F0">Segregation of Duties</text>
+
+  <rect x="525" y="462" width="215" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="543" cy="478" r="8" fill="#06B6D4"/>
+  <text x="543" y="482" text-anchor="middle" font-size="8" fill="white">📋</text>
+  <text x="560" y="482" font-size="10" fill="#E2E8F0">Immutable Audit Trail</text>
+
+  <rect x="525" y="504" width="215" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+  <circle cx="543" cy="520" r="8" fill="#14B8A6"/>
+  <text x="543" y="524" text-anchor="middle" font-size="8" fill="white">🔄</text>
+  <text x="560" y="524" font-size="10" fill="#E2E8F0">Annual Model Validation</text>
+
+  <!-- Dashed lines connecting agents to governance -->
+  <line x1="485" y1="180" x2="510" y2="226" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="485" y1="265" x2="510" y2="268" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="485" y1="350" x2="510" y2="310" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="485" y1="435" x2="510" y2="394" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="485" y1="520" x2="510" y2="478" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="485" y1="605" x2="510" y2="520" stroke="#475569" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- ========== OUTPUT SECTION (Right) ========== -->
+  <rect x="800" y="100" width="370" height="600" rx="12" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="985" y="125" text-anchor="middle" font-size="12" font-weight="600" fill="#475569" letter-spacing="1">OUTPUTS AND REPORTING</text>
+
+  <!-- Output cards -->
+  <rect x="815" y="145" width="170" height="65" rx="8" fill="white" filter="url(#shadow)"/>
+  <text x="900" y="168" text-anchor="middle" font-size="11" font-weight="600" fill="#1E293B">STR / CTR Reports</text>
+  <text x="900" y="184" text-anchor="middle" font-size="9" fill="#64748B">NFIU Filing (24hr SLA)</text>
+  <text x="900" y="197" text-anchor="middle" font-size="8" fill="#EF4444">Human Approved</text>
+
+  <rect x="815" y="225" width="170" height="65" rx="8" fill="white" filter="url(#shadow)"/>
+  <text x="900" y="248" text-anchor="middle" font-size="11" font-weight="600" fill="#1E293B">Case Management</text>
+  <text x="900" y="264" text-anchor="middle" font-size="9" fill="#64748B">Investigation Tracking</text>
+  <text x="900" y="277" text-anchor="middle" font-size="8" fill="#8B5CF6">SLA Monitored</text>
+
+  <rect x="815" y="305" width="170" height="65" rx="8" fill="white" filter="url(#shadow)"/>
+  <text x="900" y="328" text-anchor="middle" font-size="11" font-weight="600" fill="#1E293B">Compliance Dashboard</text>
+  <text x="900" y="344" text-anchor="middle" font-size="9" fill="#64748B">KPIs, Metrics, Trends</text>
+  <text x="900" y="357" text-anchor="middle" font-size="8" fill="#10B981">Real-time</text>
+
+  <rect x="815" y="385" width="170" height="65" rx="8" fill="white" filter="url(#shadow)"/>
+  <text x="900" y="408" text-anchor="middle" font-size="11" font-weight="600" fill="#1E293B">Audit Trail</text>
+  <text x="900" y="424" text-anchor="middle" font-size="9" fill="#64748B">Every Decision Logged</text>
+  <text x="900" y="437" text-anchor="middle" font-size="8" fill="#F59E0B">CBN Examination Ready</text>
+
+  <rect x="815" y="465" width="170" height="65" rx="8" fill="white" filter="url(#shadow)"/>
+  <text x="900" y="488" text-anchor="middle" font-size="11" font-weight="600" fill="#1E293B">Model Validation Log</text>
+  <text x="900" y="504" text-anchor="middle" font-size="9" fill="#64748B">Accuracy, Drift, Bias</text>
+  <text x="900" y="517" text-anchor="middle" font-size="8" fill="#3B82F6">Annual (CBN Mandate)</text>
+
+  <!-- Right side: Regulatory bodies -->
+  <rect x="1005" y="145" width="150" height="65" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+  <text x="1080" y="168" text-anchor="middle" font-size="11" font-weight="600" fill="#991B1B">NFIU</text>
+  <text x="1080" y="184" text-anchor="middle" font-size="9" fill="#DC2626">STR/CTR Filing</text>
+
+  <rect x="1005" y="225" width="150" height="65" rx="8" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1"/>
+  <text x="1080" y="248" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">CBN</text>
+  <text x="1080" y="264" text-anchor="middle" font-size="9" fill="#B45309">Examination / Audit</text>
+
+  <rect x="1005" y="305" width="150" height="65" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="1080" y="328" text-anchor="middle" font-size="11" font-weight="600" fill="#1E40AF">FATF</text>
+  <text x="1080" y="344" text-anchor="middle" font-size="9" fill="#1D4ED8">International Standards</text>
+
+  <!-- Flow arrows: Input to Agents -->
+  <line x1="200" y1="172" x2="255" y2="172" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="200" y1="242" x2="255" y2="265" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="200" y1="382" x2="255" y2="350" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="200" y1="452" x2="255" y2="265" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Flow arrows: Governance to Outputs -->
+  <line x1="755" y1="226" x2="815" y2="177" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="755" y1="310" x2="815" y2="257" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="755" y1="478" x2="815" y2="417" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="755" y1="520" x2="815" y2="497" stroke="#94A3B8" stroke-width="1.5"/>
+
+  <!-- Flow arrows: Outputs to Regulators -->
+  <line x1="985" y1="177" x2="1005" y2="177" stroke="#EF4444" stroke-width="1.5"/>
+  <line x1="985" y1="417" x2="1005" y2="257" stroke="#F59E0B" stroke-width="1.5"/>
+
+  <!-- Tech Stack Badge -->
+  <rect x="30" y="720" width="540" height="60" rx="8" fill="white" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="50" y="742" font-size="10" font-weight="600" fill="#475569">TECH STACK</text>
+  <text x="50" y="762" font-size="10" fill="#64748B">Python | FastAPI | LangChain | SQLite/PostgreSQL | Docker | GitHub Actions | OpenAI GPT-4o</text>
+
+  <!-- CBN Badge -->
+  <rect x="590" y="720" width="280" height="60" rx="8" fill="#0F172A"/>
+  <text x="730" y="742" text-anchor="middle" font-size="10" font-weight="600" fill="#F59E0B">CBN COMPLIANT</text>
+  <text x="730" y="762" text-anchor="middle" font-size="9" fill="#94A3B8">Baseline Standards for Automated AML Solutions (2026)</text>
+
+  <!-- VeriStack Badge -->
+  <rect x="890" y="720" width="280" height="60" rx="8" fill="white" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="1030" y="745" text-anchor="middle" font-size="12" font-weight="700" fill="#0F172A">VeriStack</text>
+  <text x="1030" y="762" text-anchor="middle" font-size="9" fill="#64748B">Governance-First AI | veristack.ca</text>
+</svg>

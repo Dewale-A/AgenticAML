@@ -1,7 +1,27 @@
 """
 Agent 6: Case Manager
-Routes cases, tracks investigations, manages compliance workflows,
-and generates regulatory reports. Enforces SLA and escalation chains.
+
+The final agent in the pipeline. Creates investigation cases, assigns them
+to appropriate compliance team members based on priority, and generates
+compliance reports.
+
+Responsibilities:
+1. Case creation: Opens a formal investigation case for every flagged
+   transaction, linking it to the triggering alert and customer.
+2. Priority assessment: Maps agent risk scores to case priority levels
+   (critical/high/medium/low) that drive SLA enforcement.
+3. Role-based assignment: Routes cases to the correct tier of analyst
+   based on priority — critical cases go to the Compliance Officer,
+   high-priority to Senior Analysts, others to Analysts. This implements
+   the tiered escalation chain required by CBN.
+4. SLA tracking: Calculates the investigation deadline from the priority
+   and SlaConfig and stores it in the case record for monitoring.
+5. Reporting: Generates daily compliance summaries and alert analytics
+   for management and regulatory reporting purposes.
+
+CBN requires financial institutions to maintain documented investigation
+workflows with defined SLA timelines and clear escalation paths. This
+agent implements that requirement systematically.
 """
 
 from __future__ import annotations
@@ -29,7 +49,9 @@ from src.models import CaseManagerResult
 
 WAT = timezone(timedelta(hours=1))
 
-# Compliance team roster (demo)
+# Compliance team roster for demo. In production this would be loaded from
+# an HR or identity management system. The load field is a placeholder for
+# workload balancing — not currently implemented but reserved for future use.
 COMPLIANCE_TEAM = [
     {"id": "analyst_1", "name": "Adaeze Okonkwo", "role": "analyst", "load": 0},
     {"id": "analyst_2", "name": "Emeka Nwosu", "role": "analyst", "load": 0},
@@ -55,11 +77,17 @@ class CaseManagerAgent:
         sanctions_result: Optional[Dict] = None,
         sar_result: Optional[Dict] = None,
     ) -> CaseManagerResult:
+        """Create an investigation case and assign it to the appropriate analyst.
+
+        The case creation logic:
+        1. Determine case type from the highest-priority risk signal.
+        2. Determine case priority from the risk scores.
+        3. Auto-assign to the appropriate compliance role (policy-driven).
+        4. Build a description summarising all available risk signals.
+        5. Calculate the SLA deadline from the priority level.
+        6. Persist the case and log two audit entries (lifecycle + agent decision).
         """
-        Create a case and assign to the appropriate compliance team member.
-        Logs to audit trail before returning.
-        """
-        # Determine case type and priority
+        # Case type reflects the primary investigation focus area
         case_type = self._determine_case_type(
             pattern_result, monitor_result, sanctions_result, kyc_result
         )
@@ -67,19 +95,22 @@ class CaseManagerAgent:
             pattern_result, monitor_result, sanctions_result
         )
 
-        # Auto-assign based on priority and role
+        # Role-based assignment ensures the right expertise handles each case:
+        # critical → compliance officer (highest authority, CBN escalation requirement)
+        # high → senior analyst (experience with complex ML patterns)
+        # medium/low → analyst (standard investigative workload)
         assignee = self._assign_case(priority)
 
-        # Build case description
         description = self._build_description(
             case_type, priority, pattern_result, monitor_result, kyc_result, sanctions_result
         )
 
-        # Calculate SLA deadline
+        # SLA deadline is calculated from SlaConfig and stored in the case record
+        # so compliance supervisors can query for approaching deadlines.
         sla_hours = get_sla_hours(priority)
         deadline = (datetime.now(WAT) + timedelta(hours=sla_hours)).isoformat()
 
-        # Create case in DB
+        # Create the case record in the database
         case_data = {
             "alert_id": alert_id,
             "customer_id": customer_id,
@@ -91,7 +122,10 @@ class CaseManagerAgent:
         }
         case = await create_case(self.db, case_data)
 
-        # MANDATORY: Log case creation to audit trail before returning
+        # MANDATORY: Log case creation to the audit trail before returning.
+        # The assignment_rationale explains WHY this analyst was chosen,
+        # which is important for cases where an analyst might question or
+        # contest their workload assignment.
         await log_case_lifecycle(
             db=self.db,
             case_id=case["id"],
@@ -137,10 +171,24 @@ class CaseManagerAgent:
         )
 
     async def generate_daily_report(self) -> Dict[str, Any]:
-        """Generate daily compliance summary report."""
+        """Generate a daily compliance summary report.
+
+        Called by the /reports/daily API endpoint. Provides the Compliance
+        Officer with a morning briefing on:
+        - Today's transaction volume and flag rate
+        - Alert generation rate
+        - SAR drafts awaiting approval (human review backlog)
+        - Regulatory notes for CBN reporting requirements
+
+        The report is logged to the audit trail to maintain a record of
+        when compliance reports were generated and by which system.
+        """
         today = datetime.now(WAT).date().isoformat()
         stats = await get_dashboard_stats(self.db)
 
+        # Filter today's transactions and alerts from the full dataset.
+        # A more efficient production implementation would use a date-indexed
+        # query, but this approach is correct and readable for demo purposes.
         txns_today = await list_transactions(self.db, limit=1000)
         today_txns = [t for t in txns_today if t.get("timestamp", "")[:10] == today]
 
@@ -156,7 +204,9 @@ class CaseManagerAgent:
             "generated_at": now_wat(),
             "generated_by": self.name,
             "institution": os.getenv("INSTITUTION_NAME", "Demo Bank Nigeria Ltd"),
+            # Overall totals from the full database (not just today)
             "totals": stats,
+            # Today's activity breakdown
             "today": {
                 "transactions": len(today_txns),
                 "flagged": sum(1 for t in today_txns if t.get("status") == "flagged"),
@@ -168,6 +218,7 @@ class CaseManagerAgent:
                 "pending_sar_approvals": stats.get("pending_sar_approvals", 0),
                 "sanctions_blocks": stats.get("sanctions_blocks", 0),
             },
+            # Regulatory reminders embedded in the report for the Compliance Officer
             "regulatory_notes": [
                 "All STR filings must be submitted to NFIU within 24 hours of detection.",
                 "High-risk cases require senior compliance officer review.",
@@ -188,7 +239,22 @@ class CaseManagerAgent:
         return report
 
     async def generate_alert_analytics(self) -> Dict[str, Any]:
-        """Generate alert analytics for compliance dashboard."""
+        """Generate alert analytics for the compliance dashboard.
+
+        Key metrics computed:
+        - by_severity: distribution across low/medium/high/critical
+        - by_agent: which agents are generating the most alerts
+          (high counts from a single agent may indicate tuning needed)
+        - by_status: open/investigating/resolved/false_positive split
+        - avg_resolution_hours: average investigation turnaround time
+        - false_positive_rate: (false_positives / resolved) — a key efficiency
+          KPI. Target is typically < 20% for a well-tuned AML system.
+        - top_alert_types: most frequent alert types for pattern identification
+
+        The false_positive_rate calculation uses (resolved + false_positive)
+        as the denominator to measure the precision of closed cases only —
+        open cases cannot yet be classified as true or false positives.
+        """
         alerts = await list_alerts(self.db, limit=1000)
 
         by_severity: Dict[str, int] = {}
@@ -210,6 +276,7 @@ class CaseManagerAgent:
             atype = a.get("alert_type", "unknown")
             by_type[atype] = by_type.get(atype, 0) + 1
 
+            # Compute resolution time only for alerts that have been resolved
             if a.get("resolved_at") and a.get("created_at"):
                 try:
                     created = datetime.fromisoformat(a["created_at"])
@@ -221,8 +288,10 @@ class CaseManagerAgent:
 
         total = len(alerts)
         false_positives = by_status.get("false_positive", 0)
+        # Denominator includes both 'resolved' and 'false_positive' status alerts
         resolved = by_status.get("resolved", 0) + false_positives
 
+        # Top 10 alert types by frequency — used to identify systemic patterns
         top_types = sorted(by_type.items(), key=lambda x: x[1], reverse=True)[:10]
 
         return {
@@ -235,6 +304,7 @@ class CaseManagerAgent:
                 if resolution_hours
                 else None
             ),
+            # None if no alerts have been resolved yet
             "false_positive_rate": (
                 round(false_positives / resolved, 4) if resolved > 0 else None
             ),
@@ -252,6 +322,15 @@ class CaseManagerAgent:
         sanctions_result: Optional[Dict],
         kyc_result: Optional[Dict],
     ) -> str:
+        """Select the primary investigation case type from available signals.
+
+        Priority order mirrors the severity of the underlying risk:
+        1. Sanctions investigations have the highest legal urgency
+        2. KYC failures are account-level and must be resolved before trading
+        3. Pattern-based cases reflect the primary ML typology detected
+        4. Transaction monitor flags are the fallback
+        5. General AML investigation if no specific type can be determined
+        """
         if sanctions_result and sanctions_result.get("overall_recommendation") == "block":
             return "sanctions_investigation"
         if kyc_result and kyc_result.get("kyc_status") == "failed":
@@ -259,6 +338,7 @@ class CaseManagerAgent:
         if pattern_result:
             patterns = pattern_result.get("patterns_detected", [])
             if patterns:
+                # Use the first (highest-confidence) detected pattern's typology
                 p = patterns[0]
                 typology = p.get("typology", "") if isinstance(p, dict) else getattr(p, "typology", "")
                 if "structuring" in typology:
@@ -277,6 +357,18 @@ class CaseManagerAgent:
         monitor_result: Optional[Dict],
         sanctions_result: Optional[Dict],
     ) -> str:
+        """Map risk signals to a case priority level.
+
+        Priority thresholds:
+        - critical: sanctions block OR critical pattern risk → 4h SLA
+        - high: high pattern risk OR risk_score ≥ 0.7 → 24h SLA
+        - medium: moderate risk_score (0.4–0.7) → 72h SLA
+        - low: everything else → 168h SLA
+
+        The risk_score thresholds (0.4 and 0.7) were chosen to align with the
+        GovernanceEngine's materiality and confidence gate thresholds, ensuring
+        consistency across the pipeline.
+        """
         if sanctions_result and sanctions_result.get("overall_recommendation") == "block":
             return "critical"
         if pattern_result and pattern_result.get("overall_risk") in ("critical",):
@@ -290,9 +382,19 @@ class CaseManagerAgent:
         return "low"
 
     def _assign_case(self, priority: str) -> Dict[str, str]:
-        """Assign case to appropriate team member based on priority."""
+        """Assign a case to the appropriate compliance team member by priority.
+
+        Assignment policy (mirrors CBN's tiered escalation requirement):
+        - critical → Compliance Officer (must have authority to file SARs and
+          confirm sanctions blocks; role-enforced at the governance level)
+        - high → Senior Analyst (experienced enough to handle layering and PEP cases)
+        - medium/low → Analyst (standard investigation workload)
+
+        Falls back to the last (highest-seniority) team member if the target
+        role is not found in the team roster — ensures no case is left unassigned.
+        """
         if priority == "critical":
-            # Critical cases go to compliance officer
+            # Critical cases go to the compliance officer
             return next(
                 (m for m in COMPLIANCE_TEAM if m["role"] == "compliance_officer"),
                 COMPLIANCE_TEAM[-1],
@@ -315,6 +417,17 @@ class CaseManagerAgent:
         kyc_result: Optional[Dict],
         sanctions_result: Optional[Dict],
     ) -> str:
+        """Build a pipe-separated case description from all available signals.
+
+        The description is stored on the case record and shown in the case
+        management dashboard. Pipe-separated format makes it easy for the
+        analyst to scan the key facts without opening each individual report.
+
+        Example output:
+        "Case Type: Structuring Investigation | Priority: HIGH | Triggered Rules:
+        STRUCTURING, VELOCITY_COUNT | Pattern Analysis: 2 pattern(s) detected,
+        overall risk=HIGH | KYC Status: VERIFIED"
+        """
         parts = [f"Case Type: {case_type.replace('_', ' ').title()}"]
         parts.append(f"Priority: {priority.upper()}")
 
