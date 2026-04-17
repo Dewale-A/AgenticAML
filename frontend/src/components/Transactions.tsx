@@ -1,11 +1,12 @@
 // Transactions tab - sortable, filterable table with expandable row details
 'use client'
 import { useEffect, useState } from 'react'
-import { Search, ChevronDown, ChevronUp, Filter } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, Filter, Zap } from 'lucide-react'
 import Card from './ui/Card'
 import { Table, Thead, Th, Tbody, Tr, Td } from './ui/Table'
 import { RiskBadge, StatusBadge } from './ui/Badge'
 import Modal from './ui/Modal'
+import ScreenTransaction from './ScreenTransaction'
 import { CustomerMap, getCustomerMap, formatCustomer } from '@/lib/customerLookup'
 
 async function fetchAPI(path: string, query?: string) {
@@ -51,6 +52,7 @@ export default function Transactions() {
   const [sortCol, setSortCol] = useState<keyof Transaction>('timestamp')
   const [sortAsc, setSortAsc] = useState(false)
   const [customerMap, setCustomerMap] = useState<CustomerMap>({})
+  const [screenOpen, setScreenOpen] = useState(false)
 
   useEffect(() => {
     fetchAPI('/transactions')
@@ -132,6 +134,23 @@ export default function Transactions() {
 
   return (
     <div className="space-y-4">
+      {/* Screen Transaction CTA */}
+      <div className="bg-gradient-to-r from-blue-950/60 to-slate-900/60 border border-blue-800/50 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p className="text-blue-300 font-semibold text-sm">Real-Time Transaction Screening</p>
+          <p className="text-slate-400 text-xs mt-0.5">Run a transaction through the full 6-agent AML pipeline and see live results</p>
+        </div>
+        <button
+          onClick={() => setScreenOpen(true)}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0"
+        >
+          <Zap className="w-4 h-4" />
+          Screen Transaction
+        </button>
+      </div>
+
+      <ScreenTransaction isOpen={screenOpen} onClose={() => setScreenOpen(false)} />
+
       {/* Filters row */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative">

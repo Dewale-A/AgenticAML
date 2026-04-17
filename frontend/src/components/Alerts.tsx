@@ -32,7 +32,7 @@ interface Alert {
   severity: string
   agent_source: string
   status: string
-  confidence_score: number
+  confidence: number
   recommended_action: string
   rationale: string
   transaction_id?: string
@@ -159,12 +159,12 @@ export default function Alerts() {
             ) : (
               filtered.map(alert => (
                 <Tr key={alert.alert_id} onClick={() => setSelected(alert)}>
-                  <Td><code className="text-blue-400 text-xs">{alert.alert_id?.substring(0, 12)}...</code></Td>
+                  <Td><code className="text-blue-400 text-xs">{alert.alert_id?.substring(0, 16)}</code></Td>
                   <Td><span className="text-slate-300">{formatCustomer(alert.customer_id, customerMap)}</span></Td>
                   <Td><span className="text-slate-400 text-xs">{alert.alert_type?.replace(/_/g, ' ')}</span></Td>
                   <Td><SeverityBadge severity={alert.severity} /></Td>
                   <Td><span className="text-slate-500 text-xs">{alert.agent_source}</span></Td>
-                  <Td><span className="text-slate-300 text-sm">{alert.confidence_score ? `${(alert.confidence_score * 100).toFixed(0)}%` : 'N/A'}</span></Td>
+                  <Td><span className="text-slate-300 text-sm">{alert.confidence != null ? `${(alert.confidence * 100).toFixed(0)}%` : 'N/A'}</span></Td>
                   <Td><StatusBadge status={alert.status} /></Td>
                   <Td><span className="text-slate-500 text-xs">{alert.created_at ? formatWAT(alert.created_at) : 'N/A'}</span></Td>
                 </Tr>
@@ -185,7 +185,7 @@ export default function Alerts() {
                 ['Type', selected.alert_type],
                 ['Severity', selected.severity],
                 ['Agent Source', selected.agent_source],
-                ['Confidence', selected.confidence_score ? `${(selected.confidence_score * 100).toFixed(1)}%` : 'N/A'],
+                ['Confidence', selected.confidence != null ? `${(selected.confidence * 100).toFixed(1)}%` : 'N/A'],
                 ['Status', selected.status],
                 ['Transaction ID', selected.transaction_id || 'N/A'],
                 ['Created (WAT)', selected.created_at ? formatWAT(selected.created_at) : 'N/A'],
