@@ -110,19 +110,19 @@ export default function Alerts() {
             placeholder="Search alerts..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
+            className="bg-[#111827] border border-[#1e293b] rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
           />
         </div>
         <Filter className="w-4 h-4 text-slate-500" />
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           <option value="all">All Statuses</option>
           <option value="open">Open</option>
           <option value="investigating">Investigating</option>
           <option value="resolved">Resolved</option>
         </select>
         <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           <option value="all">All Severities</option>
           <option value="critical">Critical</option>
           <option value="high">High</option>
@@ -196,7 +196,7 @@ export default function Alerts() {
             {selected.rationale && (
               <div>
                 <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">AI Rationale</h4>
-                <p className="bg-slate-900 rounded-lg p-4 text-sm text-slate-300">{selected.rationale}</p>
+                <p className="bg-[#0a1120] rounded-lg p-4 text-sm text-slate-300">{selected.rationale}</p>
               </div>
             )}
 
@@ -209,13 +209,13 @@ export default function Alerts() {
 
             {/* Action buttons */}
             {selected.status === 'open' && (
-              <div className="border-t border-slate-700 pt-4">
+              <div className="border-t border-[#1e293b] pt-4">
                 <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">Take Action</h4>
                 <textarea
                   value={actionRationale}
                   onChange={e => setActionRationale(e.target.value)}
                   placeholder="Enter rationale for this action (required for audit trail)..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500 mb-3 h-24 resize-none"
+                  className="w-full bg-[#0a1120] border border-[#1e293b] rounded-lg p-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500 mb-3 h-24 resize-none"
                 />
                 <div className="flex gap-3">
                   <button

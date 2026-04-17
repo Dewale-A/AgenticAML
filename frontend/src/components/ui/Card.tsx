@@ -9,9 +9,9 @@ interface CardProps {
 
 export default function Card({ title, subtitle, children, className = '', headerRight }: CardProps) {
   return (
-    <div className={`bg-slate-800 border border-slate-700 rounded-xl ${className}`}>
+    <div className={`bg-[#111827] border border-[#1e293b] rounded-xl ${className}`}>
       {(title || headerRight) && (
-        <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[#1e293b] flex items-center justify-between">
           <div>
             {title && <h3 className="text-slate-100 font-semibold text-sm">{title}</h3>}
             {subtitle && <p className="text-slate-500 text-xs mt-0.5">{subtitle}</p>}
@@ -35,7 +35,7 @@ interface StatCardProps {
 
 export function StatCard({ label, value, sub, icon, trend }: StatCardProps) {
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 flex flex-col gap-2">
+    <div className="bg-[#111827] border border-[#1e293b] rounded-xl p-5 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">{label}</span>
         {icon && <div className="text-slate-500">{icon}</div>}

@@ -19,7 +19,7 @@ interface Props {
 
 export default function TabNav({ activeTab, onTabChange }: Props) {
   return (
-    <nav className="bg-slate-900 border-b border-slate-800 sticky top-16 z-40">
+    <nav className="bg-[#0a1120] border-b border-[#1e293b] sticky top-16 z-40">
       <div className="max-w-screen-2xl mx-auto px-4">
         <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar">
           {TABS.map(({ id, label, icon: Icon }) => (

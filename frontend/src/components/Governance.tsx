@@ -157,16 +157,16 @@ export default function Governance() {
               placeholder="Search audit log..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 w-56"
+              className="bg-[#0a1120] border border-[#1e293b] rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 w-56"
             />
           </div>
           <Filter className="w-3.5 h-3.5 text-slate-500 mt-2" />
           <select value={entityFilter} onChange={e => setEntityFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500">
+            className="bg-[#0a1120] border border-[#1e293b] rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500">
             {entityTypes.map(t => <option key={t} value={t}>{t === 'all' ? 'All Entity Types' : t}</option>)}
           </select>
           <select value={eventFilter} onChange={e => setEventFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500">
+            className="bg-[#0a1120] border border-[#1e293b] rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500">
             {eventTypes.map(t => <option key={t} value={t}>{t === 'all' ? 'All Event Types' : t}</option>)}
           </select>
           <span className="text-slate-500 text-xs ml-auto mt-2">{filtered.length} entries</span>

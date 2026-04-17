@@ -107,11 +107,11 @@ export default function Sanctions() {
             placeholder="Search customer or entity..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
+            className="bg-[#111827] border border-[#1e293b] rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
           />
         </div>
         <select value={matchTypeFilter} onChange={e => setMatchTypeFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           <option value="all">All Match Types</option>
           <option value="exact">Exact</option>
           <option value="strong">Strong</option>
@@ -180,7 +180,7 @@ export default function Sanctions() {
             </div>
 
             {/* Action buttons */}
-            <div className="border-t border-slate-700 pt-4">
+            <div className="border-t border-[#1e293b] pt-4">
               <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">Actions</h4>
               <div className="flex gap-3">
                 <button

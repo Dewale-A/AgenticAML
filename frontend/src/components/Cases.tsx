@@ -106,11 +106,11 @@ export default function Cases() {
             placeholder="Search cases..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
+            className="bg-[#111827] border border-[#1e293b] rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
           />
         </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           <option value="all">All Statuses</option>
           <option value="open">Open</option>
           <option value="investigating">Investigating</option>
@@ -118,7 +118,7 @@ export default function Cases() {
           <option value="closed">Closed</option>
         </select>
         <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           <option value="all">All Priorities</option>
           <option value="critical">Critical</option>
           <option value="high">High</option>
@@ -190,7 +190,7 @@ export default function Cases() {
             {selected.description && (
               <div>
                 <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Description</h4>
-                <p className="bg-slate-900 rounded-lg p-4 text-sm text-slate-300">{selected.description}</p>
+                <p className="bg-[#0a1120] rounded-lg p-4 text-sm text-slate-300">{selected.description}</p>
               </div>
             )}
           </div>

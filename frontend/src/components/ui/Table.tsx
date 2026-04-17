@@ -16,7 +16,7 @@ export function Table({ children, className = '' }: TableProps) {
 
 export function Thead({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="border-b border-slate-700">
+    <thead className="border-b border-[#1e293b]">
       {children}
     </thead>
   )

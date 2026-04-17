@@ -134,11 +134,11 @@ export default function SARs() {
             placeholder="Search SARs..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
+            className="bg-[#111827] border border-[#1e293b] rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
           />
         </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           <option value="all">All Statuses</option>
           <option value="draft">Draft (Pending Review)</option>
           <option value="approved">Approved</option>
@@ -235,7 +235,7 @@ export default function SARs() {
             {selected.narrative && (
               <div>
                 <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">SAR Narrative</h4>
-                <div className="bg-slate-900 rounded-lg p-4 text-sm text-slate-300 leading-relaxed max-h-48 overflow-y-auto">
+                <div className="bg-[#0a1120] rounded-lg p-4 text-sm text-slate-300 leading-relaxed max-h-48 overflow-y-auto">
                   {selected.narrative}
                 </div>
               </div>
@@ -244,7 +244,7 @@ export default function SARs() {
             {selected.evidence_summary && (
               <div>
                 <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Evidence Summary</h4>
-                <div className="bg-slate-900 rounded-lg p-4 text-sm text-slate-400 leading-relaxed">
+                <div className="bg-[#0a1120] rounded-lg p-4 text-sm text-slate-400 leading-relaxed">
                   {selected.evidence_summary}
                 </div>
               </div>
@@ -252,7 +252,7 @@ export default function SARs() {
 
             {/* Approval / rejection controls for draft SARs */}
             {selected.status === 'draft' && (
-              <div className="border-t border-slate-700 pt-4">
+              <div className="border-t border-[#1e293b] pt-4">
                 <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                   Compliance Officer Decision
                   <span className="text-red-400 ml-1">*</span>
@@ -261,7 +261,7 @@ export default function SARs() {
                   value={approvalRationale}
                   onChange={e => setApprovalRationale(e.target.value)}
                   placeholder="Rationale is mandatory (CBN requirement). Explain your approval or rejection decision..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500 mb-3 h-28 resize-none"
+                  className="w-full bg-[#0a1120] border border-[#1e293b] rounded-lg p-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-blue-500 mb-3 h-28 resize-none"
                 />
                 <div className="flex gap-3">
                   <button

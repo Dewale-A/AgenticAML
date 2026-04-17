@@ -37,9 +37,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'lg' }:
         onClick={onClose}
       />
       {/* Modal panel */}
-      <div className={`relative z-10 bg-slate-800 border border-slate-700 rounded-xl w-full ${sizeClass} max-h-[90vh] flex flex-col shadow-2xl`}>
+      <div className={`relative z-10 bg-[#111827] border border-[#1e293b] rounded-xl w-full ${sizeClass} max-h-[90vh] flex flex-col shadow-2xl`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e293b]">
           <h2 className="text-slate-100 font-semibold text-base">{title}</h2>
           <button
             onClick={onClose}

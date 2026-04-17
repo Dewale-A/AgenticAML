@@ -13,7 +13,7 @@ export function Badge({ variant = 'default', size = 'sm', children, className = 
     warning: 'bg-amber-900/50 text-amber-400 border-amber-700/50',
     danger: 'bg-red-900/50 text-red-400 border-red-700/50',
     info: 'bg-blue-900/50 text-blue-400 border-blue-700/50',
-    ghost: 'bg-slate-800 text-slate-400 border-slate-700',
+    ghost: 'bg-[#111827] text-slate-400 border-[#1e293b]',
   }
 
   const sizeClasses = {

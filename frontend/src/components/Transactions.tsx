@@ -137,24 +137,24 @@ export default function Transactions() {
             placeholder="Search ID or customer..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
+            className="bg-[#111827] border border-[#1e293b] rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-64"
           />
         </div>
 
         <Filter className="w-4 h-4 text-slate-500" />
 
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           {statuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
         </select>
 
         <select value={channelFilter} onChange={e => setChannelFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           {channels.map(c => <option key={c} value={c}>{c === 'all' ? 'All Channels' : c}</option>)}
         </select>
 
         <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+          className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500">
           <option value="all">All Risk Tiers</option>
           <option value="low">Low (0-40%)</option>
           <option value="medium">Medium (40-60%)</option>
@@ -226,7 +226,7 @@ export default function Transactions() {
             {selected.metadata && (
               <div>
                 <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Metadata</h4>
-                <pre className="bg-slate-900 rounded-lg p-4 text-xs text-slate-400 overflow-x-auto">
+                <pre className="bg-[#0a1120] rounded-lg p-4 text-xs text-slate-400 overflow-x-auto">
                   {JSON.stringify(selected.metadata, null, 2)}
                 </pre>
               </div>
