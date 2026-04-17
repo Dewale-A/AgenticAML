@@ -1008,9 +1008,17 @@ async def get_dashboard_stats(db: aiosqlite.Connection) -> Dict:
         row = await cur.fetchone()
         stats["filed_sars"] = row["c"]
 
-    async with db.execute("SELECT COUNT(*) as c FROM cases WHERE status = 'open'") as cur:
+    async with db.execute(
+        "SELECT COUNT(*) as c FROM cases WHERE status IN ('open', 'investigating')"
+    ) as cur:
         row = await cur.fetchone()
         stats["open_cases"] = row["c"]
+
+    async with db.execute(
+        "SELECT AVG(confidence) as avg_conf FROM alerts WHERE confidence IS NOT NULL"
+    ) as cur:
+        row = await cur.fetchone()
+        stats["avg_confidence"] = round(row["avg_conf"] or 0.0, 4)
 
     async with db.execute(
         "SELECT COUNT(*) as c FROM sanctions_matches WHERE action_taken = 'block'"

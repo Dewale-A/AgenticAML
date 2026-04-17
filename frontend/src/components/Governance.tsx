@@ -25,15 +25,14 @@ interface AuditEntry {
 }
 
 interface ModelValidation {
-  validation_id: string
+  id: string
   model_name: string
-  validation_date: string
+  validated_at: string
   accuracy: number
   drift_score: number
   bias_score: number
   fairness_score: number
-  status: string
-  validator: string
+  human_reviewer: string
 }
 
 export default function Governance() {
@@ -120,19 +119,22 @@ export default function Governance() {
               </tr>
             </Thead>
             <Tbody>
-              {validations.map(v => (
-                <Tr key={v.validation_id}>
-                  <Td><code className="text-blue-400 text-xs">{v.validation_id?.substring(0, 10)}...</code></Td>
-                  <Td><span className="text-slate-300 text-xs">{v.model_name}</span></Td>
-                  <Td><span className="text-slate-500 text-xs">{v.validation_date ? formatWAT(v.validation_date) : 'N/A'}</span></Td>
-                  <Td><ScoreCell score={v.accuracy} /></Td>
-                  <Td><ScoreCell score={v.drift_score} invert /></Td>
-                  <Td><ScoreCell score={v.bias_score} invert /></Td>
-                  <Td><ScoreCell score={v.fairness_score} /></Td>
-                  <Td><Badge variant={v.status === 'passed' ? 'success' : 'danger'}>{v.status?.toUpperCase()}</Badge></Td>
-                  <Td><span className="text-slate-500 text-xs">{v.validator}</span></Td>
-                </Tr>
-              ))}
+              {validations.map(v => {
+                const passed = v.accuracy >= 0.85 && v.drift_score <= 0.1 && v.bias_score <= 0.1 && v.fairness_score >= 0.85
+                return (
+                  <Tr key={v.id}>
+                    <Td><code className="text-blue-400 text-xs">{v.id?.substring(0, 10)}...</code></Td>
+                    <Td><span className="text-slate-300 text-xs">{v.model_name}</span></Td>
+                    <Td><span className="text-slate-500 text-xs">{v.validated_at ? formatWAT(v.validated_at) : 'N/A'}</span></Td>
+                    <Td><ScoreCell score={v.accuracy} /></Td>
+                    <Td><ScoreCell score={v.drift_score} invert /></Td>
+                    <Td><ScoreCell score={v.bias_score} invert /></Td>
+                    <Td><ScoreCell score={v.fairness_score} /></Td>
+                    <Td><Badge variant={passed ? 'success' : 'danger'}>{passed ? 'PASSED' : 'FAILED'}</Badge></Td>
+                    <Td><span className="text-slate-500 text-xs">{v.human_reviewer}</span></Td>
+                  </Tr>
+                )
+              })}
             </Tbody>
           </Table>
         )}

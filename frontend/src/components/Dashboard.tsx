@@ -49,48 +49,29 @@ export default function Dashboard() {
     async function load() {
       try {
         setLoading(true)
-        const [txRes, alertRes] = await Promise.all([
-          fetchAPI('/transactions'),
+        const [txRes, alertRes, statsRes] = await Promise.all([
+          fetchAPI('/transactions', 'limit=500'),
           fetchAPI('/alerts'),
+          fetchAPI('/api/stats'),
         ])
         getCustomerMap().then(setCustomerMap)
 
         const txList = txRes.transactions || txRes || []
         const alertList = alertRes.alerts || alertRes || []
+        const apiStats = statsRes.stats || {}
 
         setTransactions(txList)
         setAlerts(alertList)
 
-        // Compute stats from raw data
-        const flagged = txList.filter((t: any) => t.status === 'flagged' || t.status === 'blocked').length
-        const openAlerts = alertList.filter((a: any) => a.status === 'open').length
-        const avgConf = alertList.length > 0
-          ? alertList.reduce((sum: number, a: any) => sum + (a.confidence_score || 0), 0) / alertList.length
-          : 0
-
+        // Use /api/stats for accurate counts (not paginated transaction list)
         setStats({
-          total_transactions: txList.length,
-          flagged_transactions: flagged,
-          open_alerts: openAlerts,
-          pending_sars: 0,
-          open_cases: 0,
-          avg_confidence: avgConf,
+          total_transactions: apiStats.total_transactions ?? txList.length,
+          flagged_transactions: apiStats.flagged_transactions ?? 0,
+          open_alerts: apiStats.open_alerts ?? 0,
+          pending_sars: apiStats.pending_sar_approvals ?? 0,
+          open_cases: apiStats.open_cases ?? 0,
+          avg_confidence: apiStats.avg_confidence ?? 0,
         })
-
-        // Also try to get SAR and case counts
-        try {
-          const [sarRes, caseRes] = await Promise.all([
-            fetchAPI('/sars'),
-            fetchAPI('/cases'),
-          ])
-          const sarList = sarRes.sars || sarRes || []
-          const caseList = caseRes.cases || caseRes || []
-          setStats(prev => prev ? {
-            ...prev,
-            pending_sars: sarList.filter((s: any) => s.status === 'draft').length,
-            open_cases: caseList.filter((c: any) => c.status === 'open' || c.status === 'investigating').length,
-          } : prev)
-        } catch { /* SARs/cases may not be loaded yet */ }
 
       } catch (e: any) {
         setError(e.message)
