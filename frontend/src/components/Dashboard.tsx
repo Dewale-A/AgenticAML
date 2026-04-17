@@ -7,6 +7,7 @@ import Card from './ui/Card'
 import RiskDistribution from './charts/RiskDistribution'
 import AlertTrend from './charts/AlertTrend'
 import { SeverityBadge, StatusBadge } from './ui/Badge'
+import { CustomerMap, getCustomerMap, formatCustomer } from '@/lib/customerLookup'
 
 // Fetch helper - uses the Next.js API proxy to avoid CORS
 async function fetchAPI(path: string, query?: string) {
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [customerMap, setCustomerMap] = useState<CustomerMap>({})
 
   useEffect(() => {
     async function load() {
@@ -51,6 +53,7 @@ export default function Dashboard() {
           fetchAPI('/transactions'),
           fetchAPI('/alerts'),
         ])
+        getCustomerMap().then(setCustomerMap)
 
         const txList = txRes.transactions || txRes || []
         const alertList = alertRes.alerts || alertRes || []
@@ -202,7 +205,7 @@ export default function Dashboard() {
                         <SeverityBadge severity={alert.severity} />
                         <span className="text-slate-400 text-xs truncate">{alert.alert_type || alert.type}</span>
                       </div>
-                      <p className="text-slate-300 text-sm truncate">{alert.customer_id || 'Unknown customer'}</p>
+                      <p className="text-slate-300 text-sm truncate">{formatCustomer(alert.customer_id, customerMap) || 'Unknown customer'}</p>
                       <p className="text-slate-500 text-xs">{alert.created_at ? formatWAT(alert.created_at) : 'N/A'}</p>
                     </div>
                     <StatusBadge status={alert.status} />

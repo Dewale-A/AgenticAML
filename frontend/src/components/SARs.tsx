@@ -6,6 +6,7 @@ import Card from './ui/Card'
 import { Table, Thead, Th, Tbody, Tr, Td } from './ui/Table'
 import { Badge, StatusBadge } from './ui/Badge'
 import Modal from './ui/Modal'
+import { CustomerMap, getCustomerMap, formatCustomer } from '@/lib/customerLookup'
 
 async function fetchAPI(path: string, body?: any, method = 'POST') {
   if (body !== undefined) {
@@ -55,6 +56,7 @@ export default function SARs() {
   const [selected, setSelected] = useState<SAR | null>(null)
   const [approvalRationale, setApprovalRationale] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [customerMap, setCustomerMap] = useState<CustomerMap>({})
 
   function load() {
     setLoading(true)
@@ -66,6 +68,7 @@ export default function SARs() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+    getCustomerMap().then(setCustomerMap)
   }
 
   useEffect(load, [])
@@ -77,12 +80,13 @@ export default function SARs() {
       result = result.filter(s =>
         s.sar_id?.toLowerCase().includes(q) ||
         s.customer_id?.toLowerCase().includes(q) ||
+        formatCustomer(s.customer_id, customerMap).toLowerCase().includes(q) ||
         s.typology?.toLowerCase().includes(q)
       )
     }
     if (statusFilter !== 'all') result = result.filter(s => s.status === statusFilter)
     setFiltered(result)
-  }, [sars, search, statusFilter])
+  }, [sars, search, statusFilter, customerMap])
 
   async function handleApproval(sarId: string, action: 'approve' | 'reject') {
     if (!approvalRationale.trim()) {
@@ -172,7 +176,7 @@ export default function SARs() {
               filtered.map(sar => (
                 <Tr key={sar.sar_id} onClick={() => setSelected(sar)}>
                   <Td><code className="text-blue-400 text-xs">{sar.sar_id?.substring(0, 12)}...</code></Td>
-                  <Td><span className="text-slate-300">{sar.customer_id}</span></Td>
+                  <Td><span className="text-slate-300">{formatCustomer(sar.customer_id, customerMap)}</span></Td>
                   <Td><span className="text-slate-400 text-xs">{sar.typology?.replace(/_/g, ' ')}</span></Td>
                   <Td><PriorityBadge priority={sar.priority} /></Td>
                   <Td>
@@ -217,7 +221,7 @@ export default function SARs() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 ['SAR ID', selected.sar_id],
-                ['Customer ID', selected.customer_id],
+                ['Customer', formatCustomer(selected.customer_id, customerMap)],
                 ['Typology', selected.typology?.replace(/_/g, ' ')],
                 ['Priority', selected.priority],
                 ['Status', selected.status],

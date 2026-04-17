@@ -6,6 +6,7 @@ import Card from './ui/Card'
 import { Table, Thead, Th, Tbody, Tr, Td } from './ui/Table'
 import { PriorityBadge, StatusBadge } from './ui/Badge'
 import Modal from './ui/Modal'
+import { CustomerMap, getCustomerMap, formatCustomer } from '@/lib/customerLookup'
 
 async function fetchAPI(path: string) {
   const res = await fetch(`/api/proxy?path=${encodeURIComponent(path)}`)
@@ -50,6 +51,7 @@ export default function Cases() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [selected, setSelected] = useState<Case | null>(null)
+  const [customerMap, setCustomerMap] = useState<CustomerMap>({})
 
   function load() {
     setLoading(true)
@@ -61,6 +63,7 @@ export default function Cases() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+    getCustomerMap().then(setCustomerMap)
   }
 
   useEffect(load, [])
@@ -72,13 +75,14 @@ export default function Cases() {
       result = result.filter(c =>
         c.case_id?.toLowerCase().includes(q) ||
         c.customer_id?.toLowerCase().includes(q) ||
+        formatCustomer(c.customer_id, customerMap).toLowerCase().includes(q) ||
         c.case_type?.toLowerCase().includes(q)
       )
     }
     if (statusFilter !== 'all') result = result.filter(c => c.status === statusFilter)
     if (priorityFilter !== 'all') result = result.filter(c => c.priority === priorityFilter)
     setFiltered(result)
-  }, [cases, search, statusFilter, priorityFilter])
+  }, [cases, search, statusFilter, priorityFilter, customerMap])
 
   if (loading) return <div className="flex justify-center items-center h-64 text-slate-400">Loading cases...</div>
   if (error) return <div className="bg-red-900/20 border border-red-800 rounded-xl p-6 text-red-400">{error}</div>
@@ -152,7 +156,7 @@ export default function Cases() {
               filtered.map(c => (
                 <Tr key={c.case_id} onClick={() => setSelected(c)}>
                   <Td><code className="text-blue-400 text-xs">{c.case_id?.substring(0, 12)}...</code></Td>
-                  <Td><span className="text-slate-300">{c.customer_id}</span></Td>
+                  <Td><span className="text-slate-300">{formatCustomer(c.customer_id, customerMap)}</span></Td>
                   <Td><span className="text-slate-400 text-xs">{c.case_type?.replace(/_/g, ' ')}</span></Td>
                   <Td><PriorityBadge priority={c.priority} /></Td>
                   <Td><StatusBadge status={c.status} /></Td>
@@ -173,7 +177,7 @@ export default function Cases() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 ['Case ID', selected.case_id],
-                ['Customer ID', selected.customer_id],
+                ['Customer', formatCustomer(selected.customer_id, customerMap)],
                 ['Type', selected.case_type?.replace(/_/g, ' ')],
                 ['Priority', selected.priority],
                 ['Status', selected.status],

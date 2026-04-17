@@ -6,6 +6,7 @@ import Card from './ui/Card'
 import { Table, Thead, Th, Tbody, Tr, Td } from './ui/Table'
 import { RiskBadge, StatusBadge } from './ui/Badge'
 import Modal from './ui/Modal'
+import { CustomerMap, getCustomerMap, formatCustomer } from '@/lib/customerLookup'
 
 async function fetchAPI(path: string, query?: string) {
   const params = new URLSearchParams({ path })
@@ -49,6 +50,7 @@ export default function Transactions() {
   const [linkedAlerts, setLinkedAlerts] = useState<any[]>([])
   const [sortCol, setSortCol] = useState<keyof Transaction>('timestamp')
   const [sortAsc, setSortAsc] = useState(false)
+  const [customerMap, setCustomerMap] = useState<CustomerMap>({})
 
   useEffect(() => {
     fetchAPI('/transactions')
@@ -59,6 +61,7 @@ export default function Transactions() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+    getCustomerMap().then(setCustomerMap)
   }, [])
 
   // Apply filters and search
@@ -69,7 +72,8 @@ export default function Transactions() {
       const q = search.toLowerCase()
       result = result.filter(t =>
         t.transaction_id?.toLowerCase().includes(q) ||
-        t.customer_id?.toLowerCase().includes(q)
+        t.customer_id?.toLowerCase().includes(q) ||
+        formatCustomer(t.customer_id, customerMap).toLowerCase().includes(q)
       )
     }
     if (statusFilter !== 'all') result = result.filter(t => t.status === statusFilter)
@@ -93,7 +97,7 @@ export default function Transactions() {
     })
 
     setFiltered(result)
-  }, [transactions, search, statusFilter, channelFilter, riskFilter, sortCol, sortAsc])
+  }, [transactions, search, statusFilter, channelFilter, riskFilter, sortCol, sortAsc, customerMap])
 
   function toggleSort(col: keyof Transaction) {
     if (sortCol === col) setSortAsc(a => !a)
@@ -186,7 +190,7 @@ export default function Transactions() {
               filtered.map(tx => (
                 <Tr key={tx.transaction_id} onClick={() => openDetail(tx)}>
                   <Td><code className="text-blue-400 text-xs">{tx.transaction_id?.substring(0, 12)}...</code></Td>
-                  <Td><span className="text-slate-300">{tx.customer_id}</span></Td>
+                  <Td><span className="text-slate-300">{formatCustomer(tx.customer_id, customerMap)}</span></Td>
                   <Td><span className="font-mono text-slate-200">{formatNGN(tx.amount)}</span></Td>
                   <Td><span className="text-slate-400">{tx.transaction_type}</span></Td>
                   <Td><span className="text-slate-400">{tx.channel}</span></Td>
@@ -207,7 +211,7 @@ export default function Transactions() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 ['Transaction ID', selected.transaction_id],
-                ['Customer ID', selected.customer_id],
+                ['Customer', formatCustomer(selected.customer_id, customerMap)],
                 ['Amount', formatNGN(selected.amount)],
                 ['Currency', selected.currency || 'NGN'],
                 ['Type', selected.transaction_type],

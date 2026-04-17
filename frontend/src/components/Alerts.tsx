@@ -6,6 +6,7 @@ import Card from './ui/Card'
 import { Table, Thead, Th, Tbody, Tr, Td } from './ui/Table'
 import { SeverityBadge, StatusBadge } from './ui/Badge'
 import Modal from './ui/Modal'
+import { CustomerMap, getCustomerMap, formatCustomer } from '@/lib/customerLookup'
 
 async function fetchAPI(path: string, body?: any) {
   if (body) {
@@ -49,6 +50,7 @@ export default function Alerts() {
   const [selected, setSelected] = useState<Alert | null>(null)
   const [actionRationale, setActionRationale] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [customerMap, setCustomerMap] = useState<CustomerMap>({})
 
   function load() {
     setLoading(true)
@@ -60,6 +62,7 @@ export default function Alerts() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+    getCustomerMap().then(setCustomerMap)
   }
 
   useEffect(load, [])
@@ -71,13 +74,14 @@ export default function Alerts() {
       result = result.filter(a =>
         a.alert_id?.toLowerCase().includes(q) ||
         a.customer_id?.toLowerCase().includes(q) ||
+        formatCustomer(a.customer_id, customerMap).toLowerCase().includes(q) ||
         a.alert_type?.toLowerCase().includes(q)
       )
     }
     if (statusFilter !== 'all') result = result.filter(a => a.status === statusFilter)
     if (severityFilter !== 'all') result = result.filter(a => a.severity === severityFilter)
     setFiltered(result)
-  }, [alerts, search, statusFilter, severityFilter])
+  }, [alerts, search, statusFilter, severityFilter, customerMap])
 
   async function updateStatus(alertId: string, newStatus: string) {
     setActionLoading(true)
@@ -156,7 +160,7 @@ export default function Alerts() {
               filtered.map(alert => (
                 <Tr key={alert.alert_id} onClick={() => setSelected(alert)}>
                   <Td><code className="text-blue-400 text-xs">{alert.alert_id?.substring(0, 12)}...</code></Td>
-                  <Td><span className="text-slate-300">{alert.customer_id}</span></Td>
+                  <Td><span className="text-slate-300">{formatCustomer(alert.customer_id, customerMap)}</span></Td>
                   <Td><span className="text-slate-400 text-xs">{alert.alert_type?.replace(/_/g, ' ')}</span></Td>
                   <Td><SeverityBadge severity={alert.severity} /></Td>
                   <Td><span className="text-slate-500 text-xs">{alert.agent_source}</span></Td>
@@ -177,7 +181,7 @@ export default function Alerts() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 ['Alert ID', selected.alert_id],
-                ['Customer', selected.customer_id],
+                ['Customer', formatCustomer(selected.customer_id, customerMap)],
                 ['Type', selected.alert_type],
                 ['Severity', selected.severity],
                 ['Agent Source', selected.agent_source],

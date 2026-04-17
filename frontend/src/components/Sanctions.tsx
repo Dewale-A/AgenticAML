@@ -6,6 +6,7 @@ import Card from './ui/Card'
 import { Table, Thead, Th, Tbody, Tr, Td } from './ui/Table'
 import { Badge } from './ui/Badge'
 import Modal from './ui/Modal'
+import { CustomerMap, getCustomerMap, formatCustomer } from '@/lib/customerLookup'
 
 async function fetchAPI(path: string, body?: any) {
   if (body) {
@@ -51,6 +52,7 @@ export default function Sanctions() {
   const [matchTypeFilter, setMatchTypeFilter] = useState('all')
   const [selected, setSelected] = useState<SanctionsMatch | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [customerMap, setCustomerMap] = useState<CustomerMap>({})
 
   function load() {
     setLoading(true)
@@ -62,6 +64,7 @@ export default function Sanctions() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+    getCustomerMap().then(setCustomerMap)
   }
 
   useEffect(load, [])
@@ -72,13 +75,14 @@ export default function Sanctions() {
       const q = search.toLowerCase()
       result = result.filter(m =>
         m.customer_id?.toLowerCase().includes(q) ||
+        formatCustomer(m.customer_id, customerMap).toLowerCase().includes(q) ||
         m.matched_entity?.toLowerCase().includes(q) ||
         m.sanctions_list?.toLowerCase().includes(q)
       )
     }
     if (matchTypeFilter !== 'all') result = result.filter(m => m.match_type === matchTypeFilter)
     setFiltered(result)
-  }, [matches, search, matchTypeFilter])
+  }, [matches, search, matchTypeFilter, customerMap])
 
   async function takeAction(matchId: string, action: string) {
     setActionLoading(true)
@@ -143,7 +147,7 @@ export default function Sanctions() {
             ) : (
               filtered.map(match => (
                 <Tr key={match.match_id} onClick={() => setSelected(match)}>
-                  <Td><span className="text-slate-300">{match.customer_id}</span></Td>
+                  <Td><span className="text-slate-300">{formatCustomer(match.customer_id, customerMap)}</span></Td>
                   <Td><span className="text-slate-200 font-medium">{match.matched_entity}</span></Td>
                   <Td><span className="text-slate-400 text-xs">{match.sanctions_list}</span></Td>
                   <Td><MatchTypeBadge matchType={match.match_type} /></Td>
@@ -164,7 +168,7 @@ export default function Sanctions() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 ['Match ID', selected.match_id],
-                ['Customer ID', selected.customer_id],
+                ['Customer', formatCustomer(selected.customer_id, customerMap)],
                 ['Matched Entity', selected.matched_entity],
                 ['Sanctions List', selected.sanctions_list],
                 ['Match Type', selected.match_type],
