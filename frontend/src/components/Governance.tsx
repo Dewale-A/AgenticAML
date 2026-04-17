@@ -49,11 +49,11 @@ export default function Governance() {
   function load() {
     setLoading(true)
     Promise.all([
-      fetchAPI('/audit-log'),
-      fetchAPI('/model-validations'),
+      fetchAPI('/governance/audit-trail'),
+      fetchAPI('/governance/model-validation'),
     ])
       .then(([auditRes, valRes]) => {
-        const auditList = auditRes.entries || auditRes || []
+        const auditList = auditRes.audit_trail || auditRes.entries || auditRes || []
         const valList = valRes.validations || valRes || []
         setAuditLog(auditList)
         setFiltered(auditList)
@@ -80,8 +80,8 @@ export default function Governance() {
     setFiltered(result)
   }, [auditLog, search, entityFilter, eventFilter])
 
-  const entityTypes = ['all', ...new Set(auditLog.map(a => a.entity_type).filter(Boolean))]
-  const eventTypes = ['all', ...new Set(auditLog.map(a => a.event_type).filter(Boolean))]
+  const entityTypes = ['all', ...new Set((auditLog || []).map(a => a.entity_type).filter(Boolean))]
+  const eventTypes = ['all', ...new Set((auditLog || []).map(a => a.event_type).filter(Boolean))]
 
   if (loading) return <div className="flex justify-center items-center h-64 text-slate-400">Loading governance data...</div>
   if (error) return <div className="bg-red-900/20 border border-red-800 rounded-xl p-6 text-red-400">{error}</div>
