@@ -18,7 +18,7 @@ export async function getCustomerMap(): Promise<CustomerMap> {
   if (cachedMap) return cachedMap
 
   try {
-    const res = await fetch('/api/proxy?endpoint=/customers')
+    const res = await fetch('/api/proxy?path=/customers')
     const data = await res.json()
     const customers = data.customers || data || []
     const map: CustomerMap = {}
