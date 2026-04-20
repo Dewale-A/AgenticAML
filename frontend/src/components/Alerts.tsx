@@ -26,7 +26,8 @@ function formatWAT(isoDate: string) {
 }
 
 interface Alert {
-  alert_id: string
+  id: string
+  alert_id?: string
   customer_id: string
   alert_type: string
   severity: string
@@ -72,7 +73,7 @@ export default function Alerts() {
     if (search) {
       const q = search.toLowerCase()
       result = result.filter(a =>
-        a.alert_id?.toLowerCase().includes(q) ||
+        (a.id || a.alert_id || '').toLowerCase().includes(q) ||
         a.customer_id?.toLowerCase().includes(q) ||
         formatCustomer(a.customer_id, customerMap).toLowerCase().includes(q) ||
         a.alert_type?.toLowerCase().includes(q)
@@ -158,8 +159,8 @@ export default function Alerts() {
               <Tr><Td className="text-slate-500 text-center py-12">No alerts match your filters.</Td></Tr>
             ) : (
               filtered.map(alert => (
-                <Tr key={alert.alert_id} onClick={() => setSelected(alert)}>
-                  <Td><code className="text-blue-400 text-xs">{alert.alert_id?.substring(0, 16)}</code></Td>
+                <Tr key={alert.id || alert.alert_id} onClick={() => setSelected(alert)}>
+                  <Td><code className="text-blue-400 text-xs">{(alert.id || alert.alert_id || '').substring(0, 16)}</code></Td>
                   <Td><span className="text-slate-300">{formatCustomer(alert.customer_id, customerMap)}</span></Td>
                   <Td><span className="text-slate-400 text-xs">{alert.alert_type?.replace(/_/g, ' ')}</span></Td>
                   <Td><SeverityBadge severity={alert.severity} /></Td>
@@ -180,7 +181,7 @@ export default function Alerts() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               {[
-                ['Alert ID', selected.alert_id],
+                ['Alert ID', selected.id || selected.alert_id],
                 ['Customer', formatCustomer(selected.customer_id, customerMap)],
                 ['Type', selected.alert_type],
                 ['Severity', selected.severity],
@@ -223,14 +224,14 @@ export default function Alerts() {
                 />
                 <div className="flex gap-3">
                   <button
-                    onClick={() => updateStatus(selected.alert_id, 'investigating')}
+                    onClick={() => updateStatus(selected.id || selected.alert_id, 'investigating')}
                     disabled={actionLoading}
                     className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
                   >
                     Investigate
                   </button>
                   <button
-                    onClick={() => updateStatus(selected.alert_id, 'resolved')}
+                    onClick={() => updateStatus(selected.id || selected.alert_id, 'resolved')}
                     disabled={actionLoading}
                     className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
                   >
