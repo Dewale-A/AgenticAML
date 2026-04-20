@@ -1056,7 +1056,7 @@ async def daily_report():
 @app.get("/reports/weekly", tags=["Reports"])
 async def weekly_report():
     """Weekly compliance report."""
-    from datetime import date
+    from datetime import date, timedelta
     today = date.today()
     # Calculate Monday of the current week as the reporting start date
     week_start = today - timedelta(days=today.weekday())

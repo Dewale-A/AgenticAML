@@ -76,14 +76,14 @@ async def setup_db():
 
 @pytest.fixture
 async def db():
-    async with await get_db() as conn:
+    async with get_db() as conn:
         yield conn
 
 
 @pytest.fixture(scope="session")
 async def seed_entities():
     """Seed a customer and transaction for governance tests."""
-    async with await get_db() as db:
+    async with get_db() as db:
         await create_customer(db, {
             "id": "gov_cust_001",
             "name": "Governance Test Customer",

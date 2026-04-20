@@ -26,7 +26,8 @@ function formatWAT(isoDate: string) {
 }
 
 interface Transaction {
-  transaction_id: string
+  id: string
+  transaction_id?: string
   customer_id: string
   amount: number
   transaction_type: string
@@ -73,7 +74,7 @@ export default function Transactions() {
     if (search) {
       const q = search.toLowerCase()
       result = result.filter(t =>
-        t.transaction_id?.toLowerCase().includes(q) ||
+        (t.id || t.transaction_id || '').toLowerCase().includes(q) ||
         t.customer_id?.toLowerCase().includes(q) ||
         formatCustomer(t.customer_id, customerMap).toLowerCase().includes(q)
       )
@@ -113,7 +114,7 @@ export default function Transactions() {
       const alertRes = await fetchAPI('/alerts')
       const allAlerts = alertRes.alerts || alertRes || []
       setLinkedAlerts(allAlerts.filter((a: any) =>
-        a.transaction_id === tx.transaction_id ||
+        a.transaction_id === (tx.id || tx.transaction_id) ||
         a.customer_id === tx.customer_id
       ))
     } catch { setLinkedAlerts([]) }
@@ -207,8 +208,8 @@ export default function Transactions() {
               <Tr><Td className="text-slate-500 text-center py-12">No transactions match your filters.</Td></Tr>
             ) : (
               filtered.map(tx => (
-                <Tr key={tx.transaction_id} onClick={() => openDetail(tx)}>
-                  <Td><code className="text-blue-400 text-xs">{tx.transaction_id?.substring(0, 12)}...</code></Td>
+                <Tr key={tx.id || tx.transaction_id} onClick={() => openDetail(tx)}>
+                  <Td><code className="text-blue-400 text-xs">{(tx.id || tx.transaction_id || '').substring(0, 12)}</code></Td>
                   <Td><span className="text-slate-300">{formatCustomer(tx.customer_id, customerMap)}</span></Td>
                   <Td><span className="font-mono text-slate-200">{formatNGN(tx.amount)}</span></Td>
                   <Td><span className="text-slate-400">{tx.transaction_type}</span></Td>
@@ -229,7 +230,7 @@ export default function Transactions() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               {[
-                ['Transaction ID', selected.transaction_id],
+                ['Transaction ID', selected.id || selected.transaction_id],
                 ['Customer', formatCustomer(selected.customer_id, customerMap)],
                 ['Amount', formatNGN(selected.amount)],
                 ['Currency', selected.currency || 'NGN'],

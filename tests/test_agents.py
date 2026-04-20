@@ -59,7 +59,7 @@ async def setup_db():
 
 @pytest.fixture
 async def db():
-    async with await get_db() as conn:
+    async with get_db() as conn:
         yield conn
 
 
@@ -76,7 +76,7 @@ SANCTIONS_CUSTOMER_ID = "cust_sanctions_test"
 @pytest.fixture(scope="session")
 async def seed_customers():
     """Insert test customers once for the session."""
-    async with await get_db() as db:
+    async with get_db() as db:
         # Full KYC individual
         await create_customer(db, {
             "id": CUSTOMER_ID,

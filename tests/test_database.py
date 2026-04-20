@@ -65,7 +65,7 @@ async def setup_db():
 
 @pytest.fixture
 async def db():
-    async with await get_db() as conn:
+    async with get_db() as conn:
         yield conn
 
 
