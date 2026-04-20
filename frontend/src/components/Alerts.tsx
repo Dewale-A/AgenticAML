@@ -224,14 +224,14 @@ export default function Alerts() {
                 />
                 <div className="flex gap-3">
                   <button
-                    onClick={() => updateStatus(selected.id || selected.alert_id, 'investigating')}
+                    onClick={() => updateStatus(selected.id || selected.alert_id || '', 'investigating')}
                     disabled={actionLoading}
                     className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
                   >
                     Investigate
                   </button>
                   <button
-                    onClick={() => updateStatus(selected.id || selected.alert_id, 'resolved')}
+                    onClick={() => updateStatus(selected.id || selected.alert_id || '', 'resolved')}
                     disabled={actionLoading}
                     className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
                   >
