@@ -1,0 +1,36 @@
+Business Source License 1.1
+
+Parameters
+
+Licensor:             VeriStack Inc.
+Licensed Work:        AgenticAML (VeriStack Sentinel)
+                      The Licensed Work is (c) 2026 VeriStack Inc.
+Additional Use Grant: You may make use of the Licensed Work, provided that
+                      you may not use the Licensed Work for a Commercial
+                      Purpose. A "Commercial Purpose" means use of the
+                      Licensed Work in a production environment to process
+                      real financial transactions for revenue-generating
+                      activities, or offering the Licensed Work to third
+                      parties as a commercial product or service.
+
+                      The following uses are expressly permitted without a
+                      commercial license:
+                      - Evaluation and testing
+                      - Academic and research use
+                      - Personal and non-commercial use
+                      - Contributing improvements back to the project
+
+Change Date:          April 27, 2030
+Change License:       Apache License, Version 2.0
+
+For information about alternative licensing arrangements for the Licensed
+Work, please contact: aderonmu.ad@gmail.com
+
+Notice
+
+The Business Source License (this document, or the "License") is not an Open
+Source license. However, the Licensed Work will eventually be made available
+under an Open Source License, as stated in this License.
+
+For more information on the use of this License, please refer to:
+https://mariadb.com/bsl11/

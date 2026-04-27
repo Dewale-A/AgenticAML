@@ -7,7 +7,8 @@ This document maps each CBN requirement from the Baseline Standards for Automate
 
 ---
 
-## 1. Customer Identification and Verification (KYC)
+## 1. Customer Ide                                                                    
+ ntification and Verification (KYC)
 
 | CBN Requirement | AgenticAML Implementation | Status | Location |
 |----------------|--------------------------|--------|----------|

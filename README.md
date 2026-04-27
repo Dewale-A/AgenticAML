@@ -320,7 +320,13 @@ For production deployment at a financial institution:
 
 ## License
 
-MIT
+This project is licensed under the [Business Source License 1.1](LICENSE).
+
+**Free for:** evaluation, testing, academic research, personal use, and contributing improvements.
+
+**Commercial use** (production deployment for revenue-generating activities) requires a commercial license from VeriStack. Contact aderonmu.ad@gmail.com for licensing inquiries.
+
+The licensed work converts to Apache License 2.0 on April 27, 2030.
 
 ---
 
