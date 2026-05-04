@@ -20,16 +20,18 @@ Controls evaluated (in order):
   5. Escalation Chain      — critical/high risk patterns escalate to the
                              appropriate compliance role
   6. KYC Escalation        — KYC failures escalate to compliance officer
+  7. Onboarding Gate       — Agent 0 decisions routed to appropriate approval
+                             flow (new: ROADMAP Phase 2)
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import aiosqlite
 
-from src.governance.rules import RULES, get_risk_tier_for_amount
 from src.governance.audit import log_governance_decision
+from src.governance.rules import RULES
 from src.models import GovernanceDecision, GovernanceResult
 
 
@@ -57,8 +59,8 @@ class GovernanceEngine:
         stage: str,
         entity_type: str,
         entity_id: str,
-        agent_output: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None,
+        agent_output: dict[str, Any],
+        context: dict[str, Any] | None = None,
     ) -> GovernanceResult:
         """Run all applicable governance checks for a given agent stage.
 
@@ -75,7 +77,7 @@ class GovernanceEngine:
         to route to human review.
         """
         context = context or {}
-        decisions: List[GovernanceDecision] = []
+        decisions: list[GovernanceDecision] = []
 
         # 1. Confidence Gate applies to every agent that reports a confidence
         # score. A score below 0.7 (configurable via CONFIDENCE_GATE_THRESHOLD)
@@ -128,9 +130,20 @@ class GovernanceEngine:
             dec = await self._check_kyc_escalation(entity_type, entity_id, kyc_status)
             decisions.append(dec)
 
+        # 7. Onboarding Gate applies after Agent 0 (OnboardingScreenerAgent) runs.
+        # Routes the onboarding decision to the correct approval flow:
+        # - 'blocked': hard block, no further action possible without exception
+        # - 'pending_escalation': creates human review queue entry for C-suite/MLRO
+        # - 'pending_review': flags for analyst review with enhanced monitoring
+        # - 'approved': customer enters the normal 6-agent pipeline
+        if stage == "onboarding_screener":
+            onboarding_decision = agent_output.get("decision", "approved")
+            dec = await self._check_onboarding_gate(entity_type, entity_id, onboarding_decision)
+            decisions.append(dec)
+
         # Aggregate outcomes across all gates
         all_passed = all(d.passed for d in decisions)
-        # blocked=True if any gate issued a hard block (sanctions match)
+        # blocked=True if any gate issued a hard block (sanctions match or blocked onboarding)
         blocked = any(d.action_taken == "block" for d in decisions)
         # escalated=True if any gate requires human intervention
         escalated = any(d.requires_human for d in decisions)
@@ -351,6 +364,77 @@ class GovernanceEngine:
         return GovernanceDecision(
             passed=passed,
             gate="escalation_chain",
+            reason=reason,
+            requires_human=requires_human,
+            action_taken=action,
+        )
+
+    async def _check_onboarding_gate(
+        self, entity_type: str, entity_id: str, onboarding_decision: str
+    ) -> GovernanceDecision:
+        """Route onboarding decisions to the correct approval flow (ROADMAP Phase 2).
+
+        This gate translates Agent 0's onboarding decision into a governance
+        control outcome:
+
+        - 'blocked': Hard block. The customer's account registration is rejected.
+          A senior compliance officer must review the block before any exception
+          can be considered. This mirrors the sanctions_block gate logic.
+
+        - 'pending_escalation': PEP or adverse media match requiring C-suite/MLRO
+          approval. Passed=True (pipeline can continue in a holding state) but
+          requires_human=True so the account is not activated until approved.
+
+        - 'pending_review': Partial/weak match. Account is activated with enhanced
+          monitoring but an analyst must review within the configured SLA.
+
+        - 'approved': No significant matches. Standard onboarding proceeds.
+        """
+        if onboarding_decision == "blocked":
+            passed = False
+            requires_human = True
+            reason = (
+                "Onboarding BLOCKED: confirmed sanctions match. "
+                "Account registration rejected per CBN mandate. "
+                "Senior compliance officer review required for any exception."
+            )
+            action = "block"
+        elif onboarding_decision == "pending_escalation":
+            passed = True
+            requires_human = True
+            reason = (
+                "Onboarding PENDING ESCALATION: PEP or adverse media match detected. "
+                "C-suite/MLRO approval required before account activation (FATF Recommendation 12)."
+            )
+            action = "escalate_to_mlro"
+        elif onboarding_decision == "pending_review":
+            passed = True
+            requires_human = True
+            reason = (
+                "Onboarding PENDING REVIEW: partial/weak watchlist match. "
+                "Account activated with enhanced monitoring. Analyst review required within SLA."
+            )
+            action = "flag_for_review"
+        else:
+            passed = True
+            requires_human = False
+            reason = "Onboarding APPROVED: no significant watchlist matches. Standard monitoring applies."
+            action = None
+
+        await log_governance_decision(
+            self.db,
+            gate="onboarding_gate",
+            entity_type=entity_type,
+            entity_id=entity_id,
+            passed=passed,
+            reason=reason,
+            requires_human=requires_human,
+            action_taken=action,
+        )
+
+        return GovernanceDecision(
+            passed=passed,
+            gate="onboarding_gate",
             reason=reason,
             requires_human=requires_human,
             action_taken=action,

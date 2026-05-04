@@ -1,17 +1,20 @@
 'use client'
-// Main entry point - renders the full dashboard SPA
+// Main entry point - renders the full dashboard SPA.
+// Tab order: Dashboard | Customer Onboarding | Transactions | Alerts | Watchlist Screening | SARs | Cases | Governance
 import { useState } from 'react'
 import Header from '@/components/Header'
 import TabNav from '@/components/TabNav'
 import Dashboard from '@/components/Dashboard'
 import Transactions from '@/components/Transactions'
 import Alerts from '@/components/Alerts'
-import Sanctions from '@/components/Sanctions'
+import WatchlistScreening from '@/components/WatchlistScreening'
+import CustomerOnboarding from '@/components/CustomerOnboarding'
 import SARs from '@/components/SARs'
 import Cases from '@/components/Cases'
 import Governance from '@/components/Governance'
 
-type Tab = 'dashboard' | 'transactions' | 'alerts' | 'sanctions' | 'sars' | 'cases' | 'governance'
+// Updated type includes new tabs; 'sanctions' removed and replaced by 'watchlist' + 'onboarding'
+type Tab = 'dashboard' | 'onboarding' | 'transactions' | 'alerts' | 'watchlist' | 'sars' | 'cases' | 'governance'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
@@ -33,9 +36,11 @@ export default function Home() {
       {/* Main content area */}
       <main className="flex-1 max-w-screen-2xl mx-auto w-full px-4 py-6">
         {activeTab === 'dashboard' && <Dashboard />}
+        {activeTab === 'onboarding' && <CustomerOnboarding />}
         {activeTab === 'transactions' && <Transactions />}
         {activeTab === 'alerts' && <Alerts />}
-        {activeTab === 'sanctions' && <Sanctions />}
+        {/* WatchlistScreening replaces Sanctions - backward compatible with /sanctions API */}
+        {activeTab === 'watchlist' && <WatchlistScreening />}
         {activeTab === 'sars' && <SARs />}
         {activeTab === 'cases' && <Cases />}
         {activeTab === 'governance' && <Governance />}
@@ -43,7 +48,7 @@ export default function Home() {
 
       {/* Footer with VeriStack branding */}
       <footer className="border-t border-slate-800 py-4 text-center text-slate-500 text-sm">
-        AgenticAML v1.0 | Governance-First AML Compliance | Powered by{' '}
+        AgenticAML v2.0 | Governance-First AML Compliance | Powered by{' '}
         <a href="https://veristack.ca" className="text-slate-400 hover:text-slate-300 underline" target="_blank" rel="noopener noreferrer">
           VeriStack
         </a>

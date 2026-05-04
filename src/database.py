@@ -10,13 +10,12 @@ DB path defaults to /app/data/aml.db and is overridable via DB_PATH env var
 so the same image can be run with an external volume or a test database.
 """
 
-import os
 import json
+import os
 import uuid
-import asyncio
-from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
-from typing import Optional, List, Dict, Any
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import aiosqlite
 
@@ -77,6 +76,23 @@ CREATE TABLE IF NOT EXISTS customers (
     -- 1 = Politically Exposed Person. PEPs require enhanced due diligence
     -- per FATF Recommendation 12 and CBN AML/CFT guidelines.
     pep_status INTEGER DEFAULT 0,
+    -- WAT timestamp of the most recent debit or credit transaction.
+    -- Used by dormant account detection (CBN AML/CFT Guidelines, Section 4).
+    -- NULL means no transactions have ever been recorded for this customer.
+    last_transaction_at TEXT,
+    -- 1 = account is currently dormant (no activity for DORMANT_THRESHOLD_DAYS).
+    -- Updated by the transaction monitor agent after each screening run.
+    is_dormant INTEGER DEFAULT 0,
+    -- WAT timestamp when the account first crossed the dormancy threshold.
+    -- Preserved even if the account later reactivates, to show the dormancy period.
+    dormant_since TEXT,
+    -- approved | pending_review | pending_escalation | blocked | null (existing customers)
+    -- Set by the OnboardingScreenerAgent during initial customer registration.
+    onboarding_status TEXT,
+    -- nationality field for onboarding screening against country-risk lists
+    nationality TEXT,
+    -- registration source: branch | online | mobile | agent
+    registration_source TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -102,7 +118,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     timestamp TEXT NOT NULL,
     -- pending | cleared | flagged — updated by TransactionMonitorAgent
     status TEXT DEFAULT 'pending',
-    -- 0.0–1.0 composite risk score assigned by TransactionMonitorAgent
+    -- 0.0-1.0 composite risk score assigned by TransactionMonitorAgent
     risk_score REAL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -118,7 +134,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     -- low | medium | high | critical
     severity TEXT DEFAULT 'medium',
     description TEXT,
-    -- Agent's self-reported confidence in this alert (0.0–1.0).
+    -- Agent's self-reported confidence in this alert (0.0-1.0).
     -- Used by GovernanceEngine confidence gate.
     confidence REAL,
     -- open | investigating | resolved | false_positive
@@ -139,12 +155,18 @@ CREATE TABLE IF NOT EXISTS sanctions_matches (
     matched_entity TEXT,
     -- exact | strong | partial | weak — determines automatic action
     match_type TEXT,
-    -- 0.0–1.0 fuzzy similarity score
+    -- 0.0-1.0 fuzzy similarity score
     match_score REAL,
     -- block | review | dismissed — action taken post-screening
     action_taken TEXT,
     -- Compliance officer who reviewed this match (mandatory for blocks)
     reviewed_by TEXT,
+    -- sanctions | pep | adverse_media — categorises the type of watchlist match.
+    -- Required for "Watchlist Screening" UI sub-category filtering (ROADMAP Section 2).
+    -- 'sanctions' = OFAC/UN/domestic sanctions lists
+    -- 'pep' = Politically Exposed Person databases
+    -- 'adverse_media' = negative news and legal proceedings indicators
+    match_category TEXT DEFAULT 'sanctions',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -215,6 +237,105 @@ CREATE TABLE IF NOT EXISTS audit_trail (
     -- Stored in WAT for regulatory alignment. This table is append-only —
     -- rows are never updated or deleted (CBN immutable log requirement).
     timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Executive escalation records for onboarding PEP/adverse media cases and
+-- high-risk transaction decisions that require C-suite or MLRO sign-off.
+-- CBN AML/CFT guidelines require documented senior approval for PEP onboarding
+-- and any decision to override an automated risk flag.
+CREATE TABLE IF NOT EXISTS escalations (
+    id TEXT PRIMARY KEY,
+    -- 'customer_onboarding' | 'transaction' | 'case' — what triggered escalation
+    entity_type TEXT NOT NULL,
+    -- customer_id, transaction_id, or case_id that this escalation refers to
+    entity_id TEXT NOT NULL,
+    -- Reason code: 'pep_match' | 'adverse_media' | 'high_risk_jurisdiction' | etc.
+    escalation_reason TEXT NOT NULL,
+    -- Which role must approve: 'head_of_compliance' | 'c_suite' | 'mlro' | 'senior_analyst'
+    required_approver_role TEXT NOT NULL,
+    -- pending | approved | rejected | expired
+    current_status TEXT DEFAULT 'pending',
+    -- Name or ID of the approver this escalation is assigned to
+    assigned_to TEXT,
+    -- Mandatory narrative when approving or rejecting — CBN requires documented rationale
+    decision_rationale TEXT,
+    -- JSON blob: match details, screening scores, supporting evidence
+    evidence_summary TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    -- Timestamp when the approver made their decision
+    decided_at TEXT,
+    -- SLA deadline: escalation must be resolved before this time
+    expires_at TEXT,
+    -- Hours allowed before escalation is considered overdue (default: 24h)
+    sla_hours INTEGER DEFAULT 24
+);
+
+-- Continuous monitoring run history.
+-- Each row represents one screening pass of all (or a subset of) customers
+-- against the current state of all configured watchlists.
+-- Required for demonstrating proactive monitoring to CBN examiners.
+CREATE TABLE IF NOT EXISTS monitoring_runs (
+    id TEXT PRIMARY KEY,
+    -- 'scheduled' | 'manual' | 'list_update' — what triggered this run
+    run_type TEXT NOT NULL,
+    -- WAT timestamp when the run started
+    started_at TEXT NOT NULL,
+    -- WAT timestamp when the run completed (NULL if still running)
+    completed_at TEXT,
+    -- Number of customer profiles screened in this run
+    customers_screened INTEGER DEFAULT 0,
+    -- Count of new matches found that were not present in the previous run
+    new_matches INTEGER DEFAULT 0,
+    -- Count of customers whose risk tier was upgraded due to new matches
+    risk_upgrades INTEGER DEFAULT 0,
+    -- 'running' | 'completed' | 'failed'
+    status TEXT DEFAULT 'running',
+    -- JSON: list versions used, configuration snapshot at time of run
+    metadata TEXT
+);
+
+-- Screening list version tracking.
+-- Tracks which version of each watchlist was used and when it was last refreshed.
+-- Delta detection compares the current customer base against newly added entries
+-- after each list update. Checksum allows change detection without re-downloading.
+CREATE TABLE IF NOT EXISTS screening_lists (
+    id TEXT PRIMARY KEY,
+    -- 'ofac_sdn' | 'un_consolidated' | 'nigerian_domestic' | 'internal_pep'
+    list_name TEXT NOT NULL,
+    -- Version string from the list provider (date or hash)
+    version TEXT,
+    -- WAT timestamp of the most recent successful list update
+    last_updated TEXT NOT NULL,
+    -- Total number of entries in the current list version
+    entry_count INTEGER DEFAULT 0,
+    -- URL where this list can be downloaded (for audit trail)
+    source_url TEXT,
+    -- SHA-256 hash of the list file — used to detect updates without full re-parse
+    checksum TEXT
+);
+
+-- External KYC verification results from providers like YouVerify (Layer 2).
+-- Stored here so the audit trail has a complete record of every identity check
+-- performed, even when providers are queried multiple times for the same customer.
+-- Raw responses are stored (encrypted in production) for regulatory evidence.
+CREATE TABLE IF NOT EXISTS identity_verifications (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT REFERENCES customers(id),
+    -- 'youverify' | 'smile_id' | 'manual' — provider used for this check
+    provider TEXT NOT NULL,
+    -- 'bvn' | 'nin' | 'pep' | 'address' | 'cac' — what was verified
+    verification_type TEXT NOT NULL,
+    -- JSON (sanitised, no raw PII) of what was sent to the provider
+    request_payload TEXT,
+    -- 'verified' | 'failed' | 'partial' | 'error'
+    response_status TEXT,
+    -- 0.0-1.0 provider confidence score for the verification result
+    confidence_score REAL,
+    -- Provider's full JSON response (should be encrypted at rest in production)
+    raw_response TEXT,
+    verified_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    -- When re-verification is required (typically 12 months for BVN/NIN)
+    expires_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS model_validations (
@@ -290,9 +411,9 @@ async def log_audit(
     event_type: str,
     actor: str,
     description: str,
-    before_state: Optional[Dict] = None,
-    after_state: Optional[Dict] = None,
-    metadata: Optional[Dict] = None,
+    before_state: dict | None = None,
+    after_state: dict | None = None,
+    metadata: dict | None = None,
 ):
     """Append an immutable audit log entry.
 
@@ -326,11 +447,11 @@ async def log_audit(
 
 async def get_audit_trail(
     db: aiosqlite.Connection,
-    entity_type: Optional[str] = None,
-    entity_id: Optional[str] = None,
+    entity_type: str | None = None,
+    entity_id: str | None = None,
     limit: int = 100,
     offset: int = 0,
-) -> List[Dict]:
+) -> list[dict]:
     """Retrieve audit entries in descending timestamp order.
 
     Optional filters let callers fetch the complete history for a specific
@@ -342,7 +463,7 @@ async def get_audit_trail(
     to keep the query plan efficient.
     """
     conditions = []
-    params: List[Any] = []
+    params: list[Any] = []
     if entity_type:
         conditions.append("entity_type = ?")
         params.append(entity_type)
@@ -363,20 +484,27 @@ async def get_audit_trail(
 # Customers
 # ---------------------------------------------------------------------------
 
-async def create_customer(db: aiosqlite.Connection, data: Dict) -> Dict:
+async def create_customer(db: aiosqlite.Connection, data: dict) -> dict:
     """Insert a new customer row and return the full created record.
 
     The caller may supply an explicit `id` (e.g., seed data with stable IDs)
     or let new_id() generate one. Both timestamps are set to the same WAT
     instant so the initial record is consistent.
+
+    New fields last_transaction_at, is_dormant, dormant_since support dormant
+    account detection per CBN AML/CFT Guidelines Section 4. onboarding_status
+    tracks the Agent 0 pre-screening outcome for new customer registrations.
     """
     cid = data.get("id") or new_id()
     ts = now_wat()
     await db.execute(
         """INSERT INTO customers
            (id, name, bvn, nin, date_of_birth, phone, address, account_type,
-            risk_tier, kyc_status, pep_status, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            risk_tier, kyc_status, pep_status,
+            last_transaction_at, is_dormant, dormant_since,
+            onboarding_status, nationality, registration_source,
+            created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             cid,
             data["name"],
@@ -389,6 +517,12 @@ async def create_customer(db: aiosqlite.Connection, data: Dict) -> Dict:
             data.get("risk_tier", "low"),
             data.get("kyc_status", "pending"),
             int(data.get("pep_status", 0)),
+            data.get("last_transaction_at"),
+            int(data.get("is_dormant", 0)),
+            data.get("dormant_since"),
+            data.get("onboarding_status"),
+            data.get("nationality"),
+            data.get("registration_source"),
             ts,
             ts,
         ),
@@ -397,14 +531,14 @@ async def create_customer(db: aiosqlite.Connection, data: Dict) -> Dict:
     return await get_customer(db, cid)
 
 
-async def get_customer(db: aiosqlite.Connection, customer_id: str) -> Optional[Dict]:
+async def get_customer(db: aiosqlite.Connection, customer_id: str) -> dict | None:
     """Fetch a single customer by primary key. Returns None if not found."""
     async with db.execute("SELECT * FROM customers WHERE id = ?", (customer_id,)) as cur:
         row = await cur.fetchone()
     return dict(row) if row else None
 
 
-async def list_customers(db: aiosqlite.Connection, limit: int = 100, offset: int = 0) -> List[Dict]:
+async def list_customers(db: aiosqlite.Connection, limit: int = 100, offset: int = 0) -> list[dict]:
     """Return all customers ordered by creation date (newest first).
 
     Ordered by created_at DESC so the most recently onboarded customers
@@ -417,7 +551,7 @@ async def list_customers(db: aiosqlite.Connection, limit: int = 100, offset: int
     return [dict(r) for r in rows]
 
 
-async def update_customer(db: aiosqlite.Connection, customer_id: str, updates: Dict) -> Optional[Dict]:
+async def update_customer(db: aiosqlite.Connection, customer_id: str, updates: dict) -> dict | None:
     """Apply a partial update to a customer record.
 
     updated_at is always refreshed on every write so the record shows when
@@ -436,7 +570,7 @@ async def update_customer(db: aiosqlite.Connection, customer_id: str, updates: D
 # Transactions
 # ---------------------------------------------------------------------------
 
-async def create_transaction(db: aiosqlite.Connection, data: Dict) -> Dict:
+async def create_transaction(db: aiosqlite.Connection, data: dict) -> dict:
     """Insert a transaction row.
 
     The `timestamp` field represents the business event time (when the
@@ -472,7 +606,7 @@ async def create_transaction(db: aiosqlite.Connection, data: Dict) -> Dict:
     return await get_transaction(db, tid)
 
 
-async def get_transaction(db: aiosqlite.Connection, transaction_id: str) -> Optional[Dict]:
+async def get_transaction(db: aiosqlite.Connection, transaction_id: str) -> dict | None:
     """Fetch a single transaction by primary key."""
     async with db.execute("SELECT * FROM transactions WHERE id = ?", (transaction_id,)) as cur:
         row = await cur.fetchone()
@@ -481,18 +615,18 @@ async def get_transaction(db: aiosqlite.Connection, transaction_id: str) -> Opti
 
 async def list_transactions(
     db: aiosqlite.Connection,
-    customer_id: Optional[str] = None,
-    status: Optional[str] = None,
+    customer_id: str | None = None,
+    status: str | None = None,
     limit: int = 100,
     offset: int = 0,
-) -> List[Dict]:
+) -> list[dict]:
     """Return transactions with optional customer and status filters.
 
     Ordered by timestamp DESC so the most recent transaction appears first,
     which is the natural order for compliance review workflows.
     """
     conditions = []
-    params: List[Any] = []
+    params: list[Any] = []
     if customer_id:
         conditions.append("customer_id = ?")
         params.append(customer_id)
@@ -509,8 +643,8 @@ async def list_transactions(
 
 
 async def update_transaction_status(
-    db: aiosqlite.Connection, transaction_id: str, status: str, risk_score: Optional[float] = None
-) -> Optional[Dict]:
+    db: aiosqlite.Connection, transaction_id: str, status: str, risk_score: float | None = None
+) -> dict | None:
     """Update a transaction's screening status and optionally its risk score.
 
     Called by TransactionMonitorAgent after scoring. The risk_score is stored
@@ -530,7 +664,7 @@ async def update_transaction_status(
 
 async def get_customer_transactions(
     db: aiosqlite.Connection, customer_id: str, days: int = 90
-) -> List[Dict]:
+) -> list[dict]:
     """Return all transactions for a customer within a lookback window.
 
     The 90-day default covers the FATF-recommended behavioural analysis
@@ -551,7 +685,7 @@ async def get_customer_transactions(
 # Alerts
 # ---------------------------------------------------------------------------
 
-async def create_alert(db: aiosqlite.Connection, data: Dict) -> Dict:
+async def create_alert(db: aiosqlite.Connection, data: dict) -> dict:
     """Insert an alert raised by an agent.
 
     agent_source and alert_type are non-nullable because every alert must be
@@ -583,7 +717,7 @@ async def create_alert(db: aiosqlite.Connection, data: Dict) -> Dict:
     return await get_alert(db, aid)
 
 
-async def get_alert(db: aiosqlite.Connection, alert_id: str) -> Optional[Dict]:
+async def get_alert(db: aiosqlite.Connection, alert_id: str) -> dict | None:
     """Fetch a single alert by primary key."""
     async with db.execute("SELECT * FROM alerts WHERE id = ?", (alert_id,)) as cur:
         row = await cur.fetchone()
@@ -592,20 +726,20 @@ async def get_alert(db: aiosqlite.Connection, alert_id: str) -> Optional[Dict]:
 
 async def list_alerts(
     db: aiosqlite.Connection,
-    status: Optional[str] = None,
-    severity: Optional[str] = None,
-    agent_source: Optional[str] = None,
-    customer_id: Optional[str] = None,
+    status: str | None = None,
+    severity: str | None = None,
+    agent_source: str | None = None,
+    customer_id: str | None = None,
     limit: int = 100,
     offset: int = 0,
-) -> List[Dict]:
+) -> list[dict]:
     """Return alerts with multi-dimensional filters.
 
     The agent_source filter allows per-agent false positive analysis
     (e.g., 'show me only alerts from sanctions_screener_agent').
     """
     conditions = []
-    params: List[Any] = []
+    params: list[Any] = []
     if status:
         conditions.append("status = ?")
         params.append(status)
@@ -627,7 +761,7 @@ async def list_alerts(
     return [dict(r) for r in rows]
 
 
-async def update_alert(db: aiosqlite.Connection, alert_id: str, updates: Dict) -> Optional[Dict]:
+async def update_alert(db: aiosqlite.Connection, alert_id: str, updates: dict) -> dict | None:
     """Apply a partial update to an alert (e.g., change status, assign analyst)."""
     set_clause = ", ".join(f"{k} = ?" for k in updates)
     values = list(updates.values()) + [alert_id]
@@ -640,20 +774,25 @@ async def update_alert(db: aiosqlite.Connection, alert_id: str, updates: Dict) -
 # Sanctions Matches
 # ---------------------------------------------------------------------------
 
-async def create_sanctions_match(db: aiosqlite.Connection, data: Dict) -> Dict:
+async def create_sanctions_match(db: aiosqlite.Connection, data: dict) -> dict:
     """Persist a sanctions screening hit to the database.
 
     Every match — including weak ones that result in 'review' rather than
     'block' — is stored. CBN requires financial institutions to maintain
     evidence of all screening activity, not just confirmed hits.
+
+    match_category ('sanctions' | 'pep' | 'adverse_media') is derived from
+    the list_name by the caller and stored here for efficient UI filtering
+    in the Watchlist Screening tab (ROADMAP Section 2).
     """
     mid = data.get("id") or new_id()
     ts = now_wat()
     await db.execute(
         """INSERT INTO sanctions_matches
            (id, customer_id, transaction_id, list_name, matched_entity,
-            match_type, match_score, action_taken, reviewed_by, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            match_type, match_score, action_taken, reviewed_by,
+            match_category, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             mid,
             data.get("customer_id"),
@@ -664,6 +803,7 @@ async def create_sanctions_match(db: aiosqlite.Connection, data: Dict) -> Dict:
             data.get("match_score"),
             data.get("action_taken"),
             data.get("reviewed_by"),
+            data.get("match_category", "sanctions"),
             ts,
         ),
     )
@@ -671,7 +811,7 @@ async def create_sanctions_match(db: aiosqlite.Connection, data: Dict) -> Dict:
     return await get_sanctions_match(db, mid)
 
 
-async def get_sanctions_match(db: aiosqlite.Connection, match_id: str) -> Optional[Dict]:
+async def get_sanctions_match(db: aiosqlite.Connection, match_id: str) -> dict | None:
     """Fetch a single sanctions match record."""
     async with db.execute("SELECT * FROM sanctions_matches WHERE id = ?", (match_id,)) as cur:
         row = await cur.fetchone()
@@ -680,20 +820,29 @@ async def get_sanctions_match(db: aiosqlite.Connection, match_id: str) -> Option
 
 async def list_sanctions_matches(
     db: aiosqlite.Connection,
-    customer_id: Optional[str] = None,
-    action_taken: Optional[str] = None,
+    customer_id: str | None = None,
+    action_taken: str | None = None,
+    match_category: str | None = None,
     limit: int = 100,
     offset: int = 0,
-) -> List[Dict]:
-    """Return sanctions matches. Filter by customer or action (block/review/dismissed)."""
+) -> list[dict]:
+    """Return sanctions matches. Filter by customer, action, or match category.
+
+    The match_category filter ('sanctions' | 'pep' | 'adverse_media') supports
+    the Watchlist Screening tab sub-category view in the frontend (ROADMAP Section 2).
+    """
     conditions = []
-    params: List[Any] = []
+    params: list[Any] = []
     if customer_id:
         conditions.append("customer_id = ?")
         params.append(customer_id)
     if action_taken:
         conditions.append("action_taken = ?")
         params.append(action_taken)
+    if match_category:
+        # Allow filtering by match category for the Watchlist Screening UI tab
+        conditions.append("match_category = ?")
+        params.append(match_category)
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
     params += [limit, offset]
     async with db.execute(
@@ -703,7 +852,7 @@ async def list_sanctions_matches(
     return [dict(r) for r in rows]
 
 
-async def update_sanctions_match(db: aiosqlite.Connection, match_id: str, updates: Dict) -> Optional[Dict]:
+async def update_sanctions_match(db: aiosqlite.Connection, match_id: str, updates: dict) -> dict | None:
     """Update a sanctions match record (e.g., record reviewer, change action)."""
     set_clause = ", ".join(f"{k} = ?" for k in updates)
     values = list(updates.values()) + [match_id]
@@ -716,7 +865,7 @@ async def update_sanctions_match(db: aiosqlite.Connection, match_id: str, update
 # SARs
 # ---------------------------------------------------------------------------
 
-async def create_sar(db: aiosqlite.Connection, data: Dict) -> Dict:
+async def create_sar(db: aiosqlite.Connection, data: dict) -> dict:
     """Insert a Suspicious Activity Report draft.
 
     SARs are always created in 'draft' status. The governance engine and
@@ -753,7 +902,7 @@ async def create_sar(db: aiosqlite.Connection, data: Dict) -> Dict:
     return await get_sar(db, sid)
 
 
-async def get_sar(db: aiosqlite.Connection, sar_id: str) -> Optional[Dict]:
+async def get_sar(db: aiosqlite.Connection, sar_id: str) -> dict | None:
     """Fetch a single SAR by primary key."""
     async with db.execute("SELECT * FROM sars WHERE id = ?", (sar_id,)) as cur:
         row = await cur.fetchone()
@@ -762,15 +911,15 @@ async def get_sar(db: aiosqlite.Connection, sar_id: str) -> Optional[Dict]:
 
 async def list_sars(
     db: aiosqlite.Connection,
-    status: Optional[str] = None,
-    priority: Optional[str] = None,
-    customer_id: Optional[str] = None,
+    status: str | None = None,
+    priority: str | None = None,
+    customer_id: str | None = None,
     limit: int = 100,
     offset: int = 0,
-) -> List[Dict]:
+) -> list[dict]:
     """Return SARs. Filtering by status='draft' shows pending human approvals."""
     conditions = []
-    params: List[Any] = []
+    params: list[Any] = []
     if status:
         conditions.append("status = ?")
         params.append(status)
@@ -789,7 +938,7 @@ async def list_sars(
     return [dict(r) for r in rows]
 
 
-async def update_sar(db: aiosqlite.Connection, sar_id: str, updates: Dict) -> Optional[Dict]:
+async def update_sar(db: aiosqlite.Connection, sar_id: str, updates: dict) -> dict | None:
     """Apply a partial update to a SAR (e.g., status change, approval recording).
 
     updated_at is refreshed on every write so the SAR lifecycle timeline
@@ -807,7 +956,7 @@ async def update_sar(db: aiosqlite.Connection, sar_id: str, updates: Dict) -> Op
 # Cases
 # ---------------------------------------------------------------------------
 
-async def create_case(db: aiosqlite.Connection, data: Dict) -> Dict:
+async def create_case(db: aiosqlite.Connection, data: dict) -> dict:
     """Create an investigation case and return it.
 
     Cases are the top-level workflow unit that compliance analysts work through.
@@ -840,7 +989,7 @@ async def create_case(db: aiosqlite.Connection, data: Dict) -> Dict:
     return await get_case(db, cid)
 
 
-async def get_case(db: aiosqlite.Connection, case_id: str) -> Optional[Dict]:
+async def get_case(db: aiosqlite.Connection, case_id: str) -> dict | None:
     """Fetch a single case by primary key."""
     async with db.execute("SELECT * FROM cases WHERE id = ?", (case_id,)) as cur:
         row = await cur.fetchone()
@@ -849,20 +998,20 @@ async def get_case(db: aiosqlite.Connection, case_id: str) -> Optional[Dict]:
 
 async def list_cases(
     db: aiosqlite.Connection,
-    status: Optional[str] = None,
-    priority: Optional[str] = None,
-    assigned_to: Optional[str] = None,
-    customer_id: Optional[str] = None,
+    status: str | None = None,
+    priority: str | None = None,
+    assigned_to: str | None = None,
+    customer_id: str | None = None,
     limit: int = 100,
     offset: int = 0,
-) -> List[Dict]:
+) -> list[dict]:
     """Return cases with workload-management filters.
 
     The assigned_to filter supports per-analyst workload views.
     The priority filter lets managers surface critical cases quickly.
     """
     conditions = []
-    params: List[Any] = []
+    params: list[Any] = []
     if status:
         conditions.append("status = ?")
         params.append(status)
@@ -884,7 +1033,7 @@ async def list_cases(
     return [dict(r) for r in rows]
 
 
-async def update_case(db: aiosqlite.Connection, case_id: str, updates: Dict) -> Optional[Dict]:
+async def update_case(db: aiosqlite.Connection, case_id: str, updates: dict) -> dict | None:
     """Apply a partial update to a case.
 
     updated_at is always refreshed so the case timeline is accurate for
@@ -902,7 +1051,7 @@ async def update_case(db: aiosqlite.Connection, case_id: str, updates: Dict) -> 
 # Model Validations
 # ---------------------------------------------------------------------------
 
-async def create_model_validation(db: aiosqlite.Connection, data: Dict) -> Dict:
+async def create_model_validation(db: aiosqlite.Connection, data: dict) -> dict:
     """Record a model validation result.
 
     CBN BSD/DIR/PUB/LAB/019/002 mandates annual independent validation of
@@ -940,8 +1089,8 @@ async def create_model_validation(db: aiosqlite.Connection, data: Dict) -> Dict:
 
 
 async def list_model_validations(
-    db: aiosqlite.Connection, model_name: Optional[str] = None, limit: int = 50
-) -> List[Dict]:
+    db: aiosqlite.Connection, model_name: str | None = None, limit: int = 50
+) -> list[dict]:
     """Return model validation history, newest first.
 
     Filtering by model_name allows examiners to review the full validation
@@ -963,10 +1112,253 @@ async def list_model_validations(
 
 
 # ---------------------------------------------------------------------------
+# Escalations
+# ---------------------------------------------------------------------------
+
+async def create_escalation(db: aiosqlite.Connection, data: dict) -> dict:
+    """Create an executive escalation record.
+
+    Escalations are created by Agent 0 (OnboardingScreener) for PEP and
+    adverse media matches, and by the governance engine for high-risk
+    transaction patterns requiring C-suite or MLRO approval.
+
+    SLA deadline (expires_at) is computed from sla_hours at creation time
+    so that overdue escalations can be identified with a simple timestamp
+    comparison in dashboard queries.
+    """
+    eid = data.get("id") or new_id()
+    ts = now_wat()
+    # Compute SLA deadline: created_at + sla_hours
+    sla_hours = int(data.get("sla_hours", 24))
+    expires_at = data.get("expires_at") or (
+        datetime.now(WAT) + timedelta(hours=sla_hours)
+    ).isoformat()
+
+    await db.execute(
+        """INSERT INTO escalations
+           (id, entity_type, entity_id, escalation_reason, required_approver_role,
+            current_status, assigned_to, decision_rationale, evidence_summary,
+            created_at, decided_at, expires_at, sla_hours)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            eid,
+            data["entity_type"],
+            data["entity_id"],
+            data["escalation_reason"],
+            data["required_approver_role"],
+            data.get("current_status", "pending"),
+            data.get("assigned_to"),
+            data.get("decision_rationale"),
+            data.get("evidence_summary"),
+            ts,
+            data.get("decided_at"),
+            expires_at,
+            sla_hours,
+        ),
+    )
+    await db.commit()
+    return await get_escalation(db, eid)
+
+
+async def get_escalation(db: aiosqlite.Connection, escalation_id: str) -> dict | None:
+    """Fetch a single escalation by primary key."""
+    async with db.execute("SELECT * FROM escalations WHERE id = ?", (escalation_id,)) as cur:
+        row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def list_escalations(
+    db: aiosqlite.Connection,
+    current_status: str | None = None,
+    entity_type: str | None = None,
+    entity_id: str | None = None,
+    required_approver_role: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict]:
+    """Return escalations with filters for status, entity type, and approver role.
+
+    The required_approver_role filter allows a dashboard to show only the
+    escalations assigned to the current user's role (e.g., only MLRO-level
+    escalations visible to the MLRO, not all pending escalations).
+    """
+    conditions = []
+    params: list[Any] = []
+    if current_status:
+        conditions.append("current_status = ?")
+        params.append(current_status)
+    if entity_type:
+        conditions.append("entity_type = ?")
+        params.append(entity_type)
+    if entity_id:
+        conditions.append("entity_id = ?")
+        params.append(entity_id)
+    if required_approver_role:
+        conditions.append("required_approver_role = ?")
+        params.append(required_approver_role)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    params += [limit, offset]
+    async with db.execute(
+        f"SELECT * FROM escalations {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+    ) as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def update_escalation(db: aiosqlite.Connection, escalation_id: str, updates: dict) -> dict | None:
+    """Apply a partial update to an escalation (e.g., status change, decision recording).
+
+    Called when an approver acts on an escalation. The decided_at timestamp
+    is set here to record when the decision was made for SLA compliance tracking.
+    """
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    values = list(updates.values()) + [escalation_id]
+    await db.execute(f"UPDATE escalations SET {set_clause} WHERE id = ?", values)
+    await db.commit()
+    return await get_escalation(db, escalation_id)
+
+
+# ---------------------------------------------------------------------------
+# Monitoring Runs
+# ---------------------------------------------------------------------------
+
+async def create_monitoring_run(db: aiosqlite.Connection, data: dict) -> dict:
+    """Create a continuous monitoring run record.
+
+    Called at the start of each re-screening job. The status starts as
+    'running' and is updated to 'completed' or 'failed' when the job ends.
+    Tracking runs separately from individual match records allows the
+    dashboard to show monitoring cadence and coverage without full-table scans.
+    """
+    rid = data.get("id") or new_id()
+    ts = now_wat()
+    await db.execute(
+        """INSERT INTO monitoring_runs
+           (id, run_type, started_at, completed_at, customers_screened,
+            new_matches, risk_upgrades, status, metadata)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            rid,
+            data.get("run_type", "manual"),
+            data.get("started_at", ts),
+            data.get("completed_at"),
+            int(data.get("customers_screened", 0)),
+            int(data.get("new_matches", 0)),
+            int(data.get("risk_upgrades", 0)),
+            data.get("status", "running"),
+            data.get("metadata"),
+        ),
+    )
+    await db.commit()
+    return await get_monitoring_run(db, rid)
+
+
+async def get_monitoring_run(db: aiosqlite.Connection, run_id: str) -> dict | None:
+    """Fetch a single monitoring run by primary key."""
+    async with db.execute("SELECT * FROM monitoring_runs WHERE id = ?", (run_id,)) as cur:
+        row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def list_monitoring_runs(
+    db: aiosqlite.Connection,
+    status: str | None = None,
+    run_type: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[dict]:
+    """Return monitoring run history, newest first.
+
+    Ordered by started_at DESC so the most recent run appears first,
+    matching the expected order on the monitoring dashboard widget.
+    """
+    conditions = []
+    params: list[Any] = []
+    if status:
+        conditions.append("status = ?")
+        params.append(status)
+    if run_type:
+        conditions.append("run_type = ?")
+        params.append(run_type)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    params += [limit, offset]
+    async with db.execute(
+        f"SELECT * FROM monitoring_runs {where} ORDER BY started_at DESC LIMIT ? OFFSET ?", params
+    ) as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def update_monitoring_run(db: aiosqlite.Connection, run_id: str, updates: dict) -> dict | None:
+    """Update a monitoring run record (e.g., mark completed, record counts)."""
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    values = list(updates.values()) + [run_id]
+    await db.execute(f"UPDATE monitoring_runs SET {set_clause} WHERE id = ?", values)
+    await db.commit()
+    return await get_monitoring_run(db, run_id)
+
+
+# ---------------------------------------------------------------------------
+# Screening Lists
+# ---------------------------------------------------------------------------
+
+async def upsert_screening_list(db: aiosqlite.Connection, data: dict) -> dict:
+    """Insert or update a screening list version record.
+
+    Uses INSERT OR REPLACE so the same list_name can be updated in place
+    when a new version is downloaded. The checksum field allows the list
+    manager to skip re-processing if the downloaded file has not changed.
+    """
+    lid = data.get("id") or new_id()
+    ts = now_wat()
+
+    # Check if a record for this list_name already exists to preserve the ID
+    async with db.execute(
+        "SELECT id FROM screening_lists WHERE list_name = ?", (data["list_name"],)
+    ) as cur:
+        existing = await cur.fetchone()
+    if existing:
+        lid = existing["id"]
+
+    await db.execute(
+        """INSERT OR REPLACE INTO screening_lists
+           (id, list_name, version, last_updated, entry_count, source_url, checksum)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (
+            lid,
+            data["list_name"],
+            data.get("version"),
+            data.get("last_updated", ts),
+            int(data.get("entry_count", 0)),
+            data.get("source_url"),
+            data.get("checksum"),
+        ),
+    )
+    await db.commit()
+    return await get_screening_list_by_name(db, data["list_name"])
+
+
+async def get_screening_list_by_name(db: aiosqlite.Connection, list_name: str) -> dict | None:
+    """Fetch a screening list record by list name."""
+    async with db.execute(
+        "SELECT * FROM screening_lists WHERE list_name = ?", (list_name,)
+    ) as cur:
+        row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def list_screening_lists(db: aiosqlite.Connection) -> list[dict]:
+    """Return all screening list records, ordered by list name."""
+    async with db.execute("SELECT * FROM screening_lists ORDER BY list_name") as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
 # Dashboard stats helpers
 # ---------------------------------------------------------------------------
 
-async def get_dashboard_stats(db: aiosqlite.Connection) -> Dict:
+async def get_dashboard_stats(db: aiosqlite.Connection) -> dict:
     """Aggregate key compliance metrics for the governance dashboard.
 
     Each stat is fetched with its own query rather than a single complex
@@ -982,7 +1374,7 @@ async def get_dashboard_stats(db: aiosqlite.Connection) -> Dict:
     - sanctions_blocks: number of transactions auto-blocked per CBN mandate
     - total/high_risk customers: customer base risk profile
     """
-    stats: Dict[str, Any] = {}
+    stats: dict[str, Any] = {}
 
     async with db.execute("SELECT COUNT(*) as c FROM transactions") as cur:
         row = await cur.fetchone()
@@ -1037,5 +1429,22 @@ async def get_dashboard_stats(db: aiosqlite.Connection) -> Dict:
     ) as cur:
         row = await cur.fetchone()
         stats["high_risk_customers"] = row["c"]
+
+    # Pending escalations count — shown on dashboard so approvers see their workload.
+    # SLA breach (expired but not yet decided) is tracked separately for urgency signalling.
+    async with db.execute(
+        "SELECT COUNT(*) as c FROM escalations WHERE current_status = 'pending'"
+    ) as cur:
+        row = await cur.fetchone()
+        stats["pending_escalations"] = row["c"]
+
+    # Dormant customers (is_dormant=1) that are currently flagged.
+    # High dormant account count may indicate insufficient account maintenance
+    # or a systemic monitoring gap per CBN dormancy guidelines.
+    async with db.execute(
+        "SELECT COUNT(*) as c FROM customers WHERE is_dormant = 1"
+    ) as cur:
+        row = await cur.fetchone()
+        stats["dormant_customers"] = row["c"]
 
     return stats

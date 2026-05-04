@@ -12,11 +12,9 @@ All monetary amounts are in NGN. All timestamps are in WAT (UTC+1).
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ---------------------------------------------------------------------------
 # Enums as literals for simplicity
@@ -49,12 +47,12 @@ class CustomerBase(BaseModel):
     """
     name: str
     # BVN (Bank Verification Number) — CBN-mandated 11-digit biometric ID
-    bvn: Optional[str] = None
+    bvn: str | None = None
     # NIN (National Identity Number) — NIMC-issued 11-digit national ID
-    nin: Optional[str] = None
-    date_of_birth: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
+    nin: str | None = None
+    date_of_birth: str | None = None
+    phone: str | None = None
+    address: str | None = None
     # individual | corporate — determines required KYC fields and monitoring rules
     account_type: str = "individual"
     risk_tier: RiskTier = "low"
@@ -65,12 +63,26 @@ class CustomerBase(BaseModel):
 
 class CustomerCreate(CustomerBase):
     """Request body for creating a new customer. No extra fields needed."""
-    pass
 
 
 class Customer(CustomerBase):
-    """Full customer record returned from the database, including system fields."""
+    """Full customer record returned from the database, including system fields.
+
+    Dormancy fields (last_transaction_at, is_dormant, dormant_since) are populated
+    by the TransactionMonitorAgent as transactions are processed.
+    onboarding_status tracks the Agent 0 pre-screening outcome.
+    """
     id: str
+    # WAT timestamp of the most recent transaction (None if no transactions yet)
+    last_transaction_at: str | None = None
+    # True if account is currently classified as dormant per CBN AML/CFT Section 4
+    is_dormant: int = 0
+    # WAT timestamp when dormancy classification first applied
+    dormant_since: str | None = None
+    # approved | pending_review | pending_escalation | blocked | None (legacy customers)
+    onboarding_status: str | None = None
+    nationality: str | None = None
+    registration_source: str | None = None
     created_at: str
     updated_at: str
 
@@ -102,25 +114,24 @@ class TransactionBase(BaseModel):
     for a zero-value transaction.
     """
     customer_id: str
-    counterparty_name: Optional[str] = None
-    counterparty_account: Optional[str] = None
+    counterparty_name: str | None = None
+    counterparty_account: str | None = None
     # gt=0 enforces positive amounts at the Pydantic validation layer
     amount: float = Field(gt=0)
     currency: str = "NGN"
     # transfer | cash_deposit | cash_withdrawal | international_wire | mobile_money | pos_payment
-    transaction_type: Optional[str] = None
+    transaction_type: str | None = None
     # branch | mobile_app | internet_banking | atm | pos | ussd
-    channel: Optional[str] = None
+    channel: str | None = None
     # inbound | outbound — direction relative to the monitored account
-    direction: Optional[str] = None
+    direction: str | None = None
     # ISO country code or city/country string used for geo-risk checks
-    geo_location: Optional[str] = None
+    geo_location: str | None = None
     timestamp: str
 
 
 class TransactionCreate(TransactionBase):
     """Request body when submitting a transaction for screening."""
-    pass
 
 
 class Transaction(TransactionBase):
@@ -128,8 +139,8 @@ class Transaction(TransactionBase):
     id: str
     # pending | cleared | flagged — set by TransactionMonitorAgent
     status: str
-    # 0.0–1.0 composite risk score; None until the monitor agent runs
-    risk_score: Optional[float] = None
+    # 0.0-1.0 composite risk score; None until the monitor agent runs
+    risk_score: float | None = None
     created_at: str
 
     class Config:
@@ -138,7 +149,7 @@ class Transaction(TransactionBase):
 
 class BatchScreenRequest(BaseModel):
     """Request body for batch transaction screening endpoint."""
-    transactions: List[TransactionCreate]
+    transactions: list[TransactionCreate]
 
 
 # ---------------------------------------------------------------------------
@@ -150,23 +161,22 @@ class AlertBase(BaseModel):
     every alert must be attributable to a specific agent and carry a
     machine-readable type for analytics.
     """
-    transaction_id: Optional[str] = None
-    customer_id: Optional[str] = None
+    transaction_id: str | None = None
+    customer_id: str | None = None
     # Which agent raised the alert (e.g., transaction_monitor_agent)
     agent_source: str
     # Machine-readable type (e.g., STRUCTURING, SANCTIONS_MATCH, KYC_INCOMPLETE)
     alert_type: str
     severity: AlertSeverity = "medium"
-    description: Optional[str] = None
-    # Agent's self-reported confidence (0.0–1.0); used by governance gate
-    confidence: Optional[float] = None
+    description: str | None = None
+    # Agent's self-reported confidence (0.0-1.0); used by governance gate
+    confidence: float | None = None
     status: AlertStatus = "open"
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
 
 
 class AlertCreate(AlertBase):
     """Request body for manually creating an alert."""
-    pass
 
 
 class Alert(AlertBase):
@@ -174,7 +184,7 @@ class Alert(AlertBase):
     id: str
     created_at: str
     # Populated when the alert is resolved or marked as false_positive
-    resolved_at: Optional[str] = None
+    resolved_at: str | None = None
 
     class Config:
         from_attributes = True
@@ -207,20 +217,21 @@ class SanctionsScreenRequest(BaseModel):
     strong matches to reduce false positives.
     """
     name: str
-    aliases: Optional[List[str]] = None
-    date_of_birth: Optional[str] = None
-    nationality: Optional[str] = None
-    address: Optional[str] = None
-    customer_id: Optional[str] = None
-    transaction_id: Optional[str] = None
+    aliases: list[str] | None = None
+    date_of_birth: str | None = None
+    nationality: str | None = None
+    address: str | None = None
+    customer_id: str | None = None
+    transaction_id: str | None = None
 
 
 class SanctionsMatchResult(BaseModel):
     """A single hit from one sanctions list.
 
-    match_score is the raw fuzzy similarity (0.0–1.0).
+    match_score is the raw fuzzy similarity (0.0-1.0).
     match_type is the categorical interpretation (exact/strong/partial/weak).
     action_taken is the agent's recommended action for this specific match.
+    match_category classifies the type of watchlist hit for UI sub-filtering.
     """
     list_name: str
     matched_entity: str
@@ -228,8 +239,10 @@ class SanctionsMatchResult(BaseModel):
     match_score: float
     # clear | review | block — exact/strong defaults to block per CBN mandate
     action_taken: RecommendedAction
+    # sanctions | pep | adverse_media — drives Watchlist Screening tab sub-filter
+    match_category: str = "sanctions"
     # Extra fields from the list entry (nationality, DOB, reason)
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
 
 
 class SanctionsScreenResult(BaseModel):
@@ -240,7 +253,7 @@ class SanctionsScreenResult(BaseModel):
     """
     name_screened: str
     overall_recommendation: RecommendedAction
-    matches: List[SanctionsMatchResult]
+    matches: list[SanctionsMatchResult]
     screened_at: str
 
 
@@ -267,14 +280,14 @@ class SarBase(BaseModel):
     requires_human_approval is always True in SarGeneratorResult — it is
     included here as a design reminder, not a runtime toggle.
     """
-    alert_id: Optional[str] = None
-    customer_id: Optional[str] = None
+    alert_id: str | None = None
+    customer_id: str | None = None
     # AI-generated draft; human reviewer may edit before filing
-    draft_narrative: Optional[str] = None
+    draft_narrative: str | None = None
     # Approved human-edited version; None until approved
-    final_narrative: Optional[str] = None
+    final_narrative: str | None = None
     # AML typology (structuring_smurfing, pep_corruption, layering, etc.)
-    typology: Optional[str] = None
+    typology: str | None = None
     # routine | urgent | critical — maps to NFIU filing priority
     priority: str = "routine"
     status: SarStatus = "draft"
@@ -285,12 +298,12 @@ class Sar(SarBase):
     """Full SAR record returned from the database."""
     id: str
     # Compliance officer who approved this SAR; None until approval step
-    approved_by: Optional[str] = None
-    approval_rationale: Optional[str] = None
+    approved_by: str | None = None
+    approval_rationale: str | None = None
     # Populated when status changes to 'filed'
-    filed_at: Optional[str] = None
+    filed_at: str | None = None
     # NFIU-issued reference number assigned upon filing
-    nfiu_reference: Optional[str] = None
+    nfiu_reference: str | None = None
     created_at: str
     updated_at: str
 
@@ -307,7 +320,7 @@ class SarApprove(BaseModel):
     approved_by: str
     rationale: str
     # Optionally replace the draft narrative with a human-edited version
-    final_narrative: Optional[str] = None
+    final_narrative: str | None = None
 
 
 class SarReject(BaseModel):
@@ -328,7 +341,7 @@ class SarFile(BaseModel):
     pre-assigned reference. Otherwise one is auto-generated.
     """
     filed_by: str
-    nfiu_reference: Optional[str] = None
+    nfiu_reference: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -337,24 +350,24 @@ class SarFile(BaseModel):
 
 class CaseBase(BaseModel):
     """Core investigation case fields."""
-    alert_id: Optional[str] = None
-    customer_id: Optional[str] = None
+    alert_id: str | None = None
+    customer_id: str | None = None
     # sanctions_investigation | kyc_failure | structuring_investigation | etc.
-    case_type: Optional[str] = None
+    case_type: str | None = None
     priority: str = "medium"
     status: CaseStatus = "open"
-    assigned_to: Optional[str] = None
-    description: Optional[str] = None
+    assigned_to: str | None = None
+    description: str | None = None
 
 
 class Case(CaseBase):
     """Full case record returned from the database."""
     id: str
     # Free-text resolution recorded when case is closed; required for high-risk cases
-    resolution: Optional[str] = None
+    resolution: str | None = None
     created_at: str
     updated_at: str
-    closed_at: Optional[str] = None
+    closed_at: str | None = None
 
     class Config:
         from_attributes = True
@@ -367,7 +380,7 @@ class CaseStatusUpdate(BaseModel):
     statement is blocked at the API layer.
     """
     status: CaseStatus
-    resolution: Optional[str] = None
+    resolution: str | None = None
     updated_by: str
 
 
@@ -393,15 +406,15 @@ class TriggeredRule(BaseModel):
     """
     rule: str
     description: str
-    threshold: Optional[float] = None
-    observed: Optional[float] = None
+    threshold: float | None = None
+    observed: float | None = None
 
 
 class TransactionMonitorResult(BaseModel):
     """Output of TransactionMonitorAgent.screen().
 
     risk_score and confidence are separate:
-    - risk_score: how suspicious the transaction is (0.0–1.0)
+    - risk_score: how suspicious the transaction is (0.0-1.0)
     - confidence: how certain the agent is about its own assessment
 
     audit_logged=True signals that the result has been committed to the
@@ -414,7 +427,7 @@ class TransactionMonitorResult(BaseModel):
     # Agent certainty about the risk_score (based on number of rules triggered)
     confidence: float
     flagged: bool
-    triggered_rules: List[TriggeredRule]
+    triggered_rules: list[TriggeredRule]
     status: str  # flagged | cleared
     audit_logged: bool = True
 
@@ -429,7 +442,7 @@ class KycVerifierResult(BaseModel):
     kyc_status: KycStatus
     risk_tier: RiskTier
     # Fields that are required but absent from the customer record
-    missing_fields: List[str]
+    missing_fields: list[str]
     verification_confidence: float
     pep_detected: bool
     audit_logged: bool = True
@@ -447,11 +460,11 @@ class PatternMatch(BaseModel):
     """
     pattern_name: str
     description: str
-    # 0.0–1.0 confidence that this pattern reflects genuine ML activity
+    # 0.0-1.0 confidence that this pattern reflects genuine ML activity
     confidence: float
     # FATF typology category for SAR classification
     typology: str
-    evidence: List[str]
+    evidence: list[str]
 
 
 class PatternAnalyzerResult(BaseModel):
@@ -463,9 +476,9 @@ class PatternAnalyzerResult(BaseModel):
     customer_id: str
     # low | medium | high | critical — determines downstream actions
     overall_risk: str
-    patterns_detected: List[PatternMatch]
+    patterns_detected: list[PatternMatch]
     # Human-readable recommended actions for the compliance analyst
-    recommended_actions: List[str]
+    recommended_actions: list[str]
     # Summary of evidence combining transaction counts, patterns, and LLM analysis
     supporting_evidence: str
     audit_logged: bool = True
@@ -480,7 +493,7 @@ class SarGeneratorResult(BaseModel):
     """
     sar_id: str
     customer_id: str
-    alert_id: Optional[str]
+    alert_id: str | None
     draft_narrative: str
     typology: str
     priority: str
@@ -498,14 +511,14 @@ class CaseManagerResult(BaseModel):
     at-risk cases.
     """
     case_id: str
-    alert_id: Optional[str]
+    alert_id: str | None
     customer_id: str
     case_type: str
     priority: str
     assigned_to: str
     status: str
     # ISO timestamp by which the case should be resolved per SLA policy
-    sla_deadline: Optional[str]
+    sla_deadline: str | None
     audit_logged: bool = True
 
 
@@ -526,7 +539,7 @@ class GovernanceDecision(BaseModel):
     reason: str
     requires_human: bool = False
     # None | escalate_to_human | additional_review | block | escalate_critical | etc.
-    action_taken: Optional[str] = None
+    action_taken: str | None = None
 
 
 class GovernanceResult(BaseModel):
@@ -537,7 +550,7 @@ class GovernanceResult(BaseModel):
     escalated indicates human review is required before proceeding.
     """
     all_passed: bool
-    decisions: List[GovernanceDecision]
+    decisions: list[GovernanceDecision]
     # True if any gate set requires_human=True
     escalated: bool = False
     # True if any gate set action_taken='block' (sanctions match)
@@ -551,7 +564,7 @@ class GovernanceResult(BaseModel):
 class PipelineResult(BaseModel):
     """Full output of the 6-agent AML pipeline for a single transaction.
 
-    Agents 4–6 (pattern_result, sar_result, case_result) are Optional because
+    Agents 4-6 (pattern_result, sar_result, case_result) are Optional because
     they are only invoked when the transaction is flagged or the customer is
     high-risk. Cleared low-risk transactions skip these expensive stages.
 
@@ -564,15 +577,15 @@ class PipelineResult(BaseModel):
     kyc_result: KycVerifierResult
     sanctions_result: SanctionsScreenResult
     # None if transaction was cleared and customer is low-risk
-    pattern_result: Optional[PatternAnalyzerResult] = None
+    pattern_result: PatternAnalyzerResult | None = None
     # None if risk score and pattern analysis did not warrant a SAR
-    sar_result: Optional[SarGeneratorResult] = None
+    sar_result: SarGeneratorResult | None = None
     # None if neither flagged nor SAR-generating
-    case_result: Optional[CaseManagerResult] = None
-    governance_decisions: List[GovernanceResult]
+    case_result: CaseManagerResult | None = None
+    governance_decisions: list[GovernanceResult]
     # cleared | flagged | blocked | escalated
     final_status: str
-    processing_time_ms: Optional[float] = None
+    processing_time_ms: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -588,17 +601,17 @@ class ModelValidationCreate(BaseModel):
     """
     model_name: str
     # annual_cbn_validation | quarterly_review | ad_hoc
-    validation_type: Optional[str] = None
-    accuracy: Optional[float] = None
+    validation_type: str | None = None
+    accuracy: float | None = None
     # Concept drift score — measures how much model behaviour has shifted
-    drift_score: Optional[float] = None
+    drift_score: float | None = None
     # Demographic bias score — detects discriminatory patterns in model output
-    bias_score: Optional[float] = None
+    bias_score: float | None = None
     # Cross-segment fairness score
-    fairness_score: Optional[float] = None
+    fairness_score: float | None = None
     # Must be independent of the model's development team per CBN guidelines
-    human_reviewer: Optional[str] = None
-    findings: Optional[str] = None
+    human_reviewer: str | None = None
+    findings: str | None = None
 
 
 class ModelValidation(ModelValidationCreate):
@@ -632,7 +645,7 @@ class DailyReport(BaseModel):
     sanctions_blocks: int
     open_cases: int
     # List of high-risk transaction summaries for the morning escalation review
-    high_risk_transactions: List[Dict[str, Any]] = []
+    high_risk_transactions: list[dict[str, Any]] = []
 
 
 class AlertAnalytics(BaseModel):
@@ -645,14 +658,235 @@ class AlertAnalytics(BaseModel):
     """
     total_alerts: int
     # Count of alerts by severity level
-    by_severity: Dict[str, int]
+    by_severity: dict[str, int]
     # Count of alerts by agent source — shows which agents are most active
-    by_agent: Dict[str, int]
+    by_agent: dict[str, int]
     # Count of alerts by current status — shows triage queue health
-    by_status: Dict[str, int]
+    by_status: dict[str, int]
     # Average hours from alert creation to resolution
-    avg_resolution_hours: Optional[float]
+    avg_resolution_hours: float | None
     # false_positives / total_resolved — system precision metric
-    false_positive_rate: Optional[float]
+    false_positive_rate: float | None
     # Most frequent alert types — used to identify patterns in ML activity
-    top_alert_types: List[Dict[str, Any]]
+    top_alert_types: list[dict[str, Any]]
+
+
+# ---------------------------------------------------------------------------
+# Onboarding models (Agent 0: OnboardingScreenerAgent)
+# ---------------------------------------------------------------------------
+
+class OnboardingRequest(BaseModel):
+    """Request body for new customer onboarding pre-screening.
+
+    Agent 0 screens this data against all watchlists BEFORE the customer
+    is activated in the system. This gates entry into the AML pipeline per
+    CBN KYC Requirements for customer acceptance.
+
+    aliases is a list of known alternative names (maiden name, trade name)
+    used to broaden the screening coverage and reduce false negatives from
+    name variations.
+    """
+    name: str
+    bvn: str | None = None
+    nin: str | None = None
+    date_of_birth: str | None = None
+    nationality: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    # individual | corporate
+    account_type: str = "individual"
+    # Known aliases or alternative spellings — screened in addition to the primary name
+    aliases: list[str] | None = None
+    # branch | online | mobile | agent — affects risk weighting
+    registration_source: str | None = None
+
+
+class OnboardingResult(BaseModel):
+    """Result of the Agent 0 onboarding pre-screening pipeline.
+
+    decision values:
+    - approved: no watchlist matches, customer can be onboarded at the assigned risk_tier
+    - pending_review: weak/partial match requiring analyst review; account activated
+      with enhanced monitoring pending resolution
+    - pending_escalation: PEP match or adverse media requiring C-suite/MLRO approval
+      before activation; account held in queue
+    - blocked: confirmed sanctions match; account registration rejected per CBN mandate
+
+    escalation_id is populated when decision is 'pending_escalation', linking this
+    onboarding outcome to an escalation record for approver tracking.
+    """
+    customer_id: str | None = None
+    name: str
+    decision: str  # approved | pending_review | pending_escalation | blocked
+    risk_tier: str = "low"
+    # Human-readable explanation of the decision (why it was approved/blocked/escalated)
+    decision_reason: str
+    # Watchlist matches found during screening (may be empty for approved)
+    screening_matches: list[dict[str, Any]] = []
+    # ID of the escalation record created if decision is 'pending_escalation'
+    escalation_id: str | None = None
+    screened_at: str
+    audit_logged: bool = True
+
+
+class OnboardingApprove(BaseModel):
+    """Request body for approving a pending_escalation onboarding decision.
+
+    CBN requires documented C-suite or MLRO approval before onboarding a customer
+    with a PEP or adverse media match. rationale is mandatory — the empty string
+    is rejected by the API.
+    """
+    approved_by: str
+    rationale: str
+    # Optionally override the risk tier to 'high' or 'very_high' for approved PEPs
+    override_risk_tier: str | None = None
+
+
+class OnboardingReject(BaseModel):
+    """Request body for rejecting a pending_escalation onboarding decision.
+
+    rejected_by and rationale are both mandatory for audit trail completeness.
+    The rejection reason must document why the PEP/adverse media match was
+    treated as disqualifying in this instance.
+    """
+    rejected_by: str
+    rationale: str
+
+
+# ---------------------------------------------------------------------------
+# Escalation models
+# ---------------------------------------------------------------------------
+
+class EscalationCreate(BaseModel):
+    """Input for creating an executive escalation record.
+
+    Escalations are created programmatically by Agent 0 and the governance
+    engine, but this model is also used for manually creating escalations
+    via the API (e.g., a compliance officer escalating a flagged case to MLRO).
+    """
+    # 'customer_onboarding' | 'transaction' | 'case'
+    entity_type: str
+    entity_id: str
+    # 'pep_match' | 'adverse_media' | 'high_risk_jurisdiction' | etc.
+    escalation_reason: str
+    # 'head_of_compliance' | 'c_suite' | 'mlro' | 'senior_analyst'
+    required_approver_role: str
+    assigned_to: str | None = None
+    # JSON-serialisable evidence summary — match details, screening scores
+    evidence_summary: str | None = None
+    # Override default SLA (24h) for urgent escalations
+    sla_hours: int = 24
+
+
+class Escalation(BaseModel):
+    """Full escalation record returned from the database."""
+    id: str
+    entity_type: str
+    entity_id: str
+    escalation_reason: str
+    required_approver_role: str
+    # pending | approved | rejected | expired
+    current_status: str
+    assigned_to: str | None = None
+    decision_rationale: str | None = None
+    evidence_summary: str | None = None
+    created_at: str
+    decided_at: str | None = None
+    expires_at: str | None = None
+    sla_hours: int = 24
+
+    class Config:
+        from_attributes = True
+
+
+class EscalationDecision(BaseModel):
+    """Request body for approving or rejecting an escalation.
+
+    rationale is mandatory — CBN requires a documented justification for
+    every senior-level compliance decision, whether approving or rejecting.
+    decided_by identifies the human approver for the audit trail.
+    """
+    decided_by: str
+    rationale: str
+
+
+# ---------------------------------------------------------------------------
+# Monitoring models (Phase 3: Continuous Monitoring)
+# ---------------------------------------------------------------------------
+
+class MonitoringRunCreate(BaseModel):
+    """Input for triggering a manual monitoring run.
+
+    run_type defaults to 'manual' for API-triggered runs.
+    list_versions optionally specifies which list versions to use;
+    if omitted, the latest downloaded versions are used automatically.
+    """
+    run_type: str = "manual"
+    # Optional metadata passed through to the run record (e.g., triggering user)
+    metadata: dict[str, Any] | None = None
+
+
+class MonitoringRun(BaseModel):
+    """Full monitoring run record returned from the database."""
+    id: str
+    # 'scheduled' | 'manual' | 'list_update'
+    run_type: str
+    started_at: str
+    completed_at: str | None = None
+    customers_screened: int = 0
+    new_matches: int = 0
+    risk_upgrades: int = 0
+    # 'running' | 'completed' | 'failed'
+    status: str
+    metadata: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class MonitoringStatus(BaseModel):
+    """Current continuous monitoring status for the dashboard widget.
+
+    last_run is the most recently completed run summary.
+    next_scheduled_run is the ISO timestamp of the next automatic run
+    (None if only manual runs are configured).
+    """
+    last_run: MonitoringRun | None = None
+    total_runs: int = 0
+    # Customers currently flagged by the monitoring system (not yet resolved)
+    active_monitoring_alerts: int = 0
+    next_scheduled_run: str | None = None
+    monitoring_enabled: bool = True
+
+
+class ScreeningList(BaseModel):
+    """A screening list version record returned from the database."""
+    id: str
+    # 'ofac_sdn' | 'un_consolidated' | 'nigerian_domestic' | 'internal_pep'
+    list_name: str
+    version: str | None = None
+    last_updated: str
+    entry_count: int = 0
+    source_url: str | None = None
+    checksum: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class OnboardingScreenerResult(BaseModel):
+    """Internal result type returned by OnboardingScreenerAgent.screen().
+
+    This is the agent-level result model (not the API-level response).
+    It mirrors OnboardingResult but is typed separately so the agent's
+    return contract is explicit and not mixed with API serialisation concerns.
+    """
+    customer_id: str | None
+    name: str
+    decision: str  # approved | pending_review | pending_escalation | blocked
+    risk_tier: str
+    decision_reason: str
+    screening_matches: list[dict[str, Any]]
+    escalation_id: str | None
+    screened_at: str
+    audit_logged: bool = True

@@ -1,5 +1,5 @@
 """
-Agent 3: Sanctions Screener
+Agent 3: Sanctions Screener (Watchlist Screener)
 
 Screens customers and counterparties against multiple sanctions lists and
 PEP databases using fuzzy name matching.
@@ -16,9 +16,16 @@ Fuzzy matching is used instead of exact matching because:
 
 Match type thresholds:
 - exact (1.0): perfect string match after normalisation
-- strong (≥0.85): near-certain match — default to block per CBN mandate
-- partial (≥0.70): probable match — requires human review
-- weak (≥0.55): possible match — flagged for review, low block probability
+- strong (>=0.85): near-certain match — default to block per CBN mandate
+- partial (>=0.70): probable match — requires human review
+- weak (>=0.55): possible match — flagged for review, low block probability
+
+match_category field (ROADMAP Phase 1, Section 2):
+- 'sanctions': match on OFAC SDN, UN Consolidated, or Nigerian domestic list
+- 'pep': match on PEP database (Politically Exposed Person)
+- 'adverse_media': match on internal adverse media indicators list
+This categorisation supports the "Watchlist Screening" tab sub-category UI
+(replacing the simpler "Sanctions" tab) per CBN terminology alignment.
 
 Governance: Confirmed 'block' matches trigger an immediate auto-block and
 require senior compliance officer confirmation before any reversal.
@@ -30,12 +37,11 @@ from __future__ import annotations
 import re
 import unicodedata
 from difflib import SequenceMatcher
-from typing import Any, Dict, List, Optional
 
 import aiosqlite
 
-from src.database import create_sanctions_match, list_sanctions_matches, now_wat
 from src.data.sanctions_lists import SANCTIONS_DB
+from src.database import create_sanctions_match, now_wat
 from src.governance.audit import log_agent_decision, log_sanctions_screening
 from src.models import (
     SanctionsMatchResult,
@@ -59,12 +65,12 @@ class SanctionsScreenerAgent:
     async def screen(
         self,
         name: str,
-        aliases: Optional[List[str]] = None,
-        date_of_birth: Optional[str] = None,
-        nationality: Optional[str] = None,
-        address: Optional[str] = None,
-        customer_id: Optional[str] = None,
-        transaction_id: Optional[str] = None,
+        aliases: list[str] | None = None,
+        date_of_birth: str | None = None,
+        nationality: str | None = None,
+        address: str | None = None,
+        customer_id: str | None = None,
+        transaction_id: str | None = None,
     ) -> SanctionsScreenResult:
         """Screen a name against all configured sanctions lists.
 
@@ -83,10 +89,17 @@ class SanctionsScreenerAgent:
         """
         # Include aliases in screening to catch known name variants
         all_names = [name] + (aliases or [])
-        all_matches: List[SanctionsMatchResult] = []
+        all_matches: list[SanctionsMatchResult] = []
         lists_checked = list(SANCTIONS_DB.keys())
 
         for list_name, entries in SANCTIONS_DB.items():
+            # Derive the match category from the list name.
+            # This mapping drives the Watchlist Screening UI sub-category badges:
+            # - sanctions (red): OFAC, UN, domestic sanctions lists
+            # - pep (orange): Politically Exposed Person databases
+            # - adverse_media (yellow): internal adverse media indicators
+            match_category = self._list_to_category(list_name)
+
             for entry in entries:
                 # Find the best match score against this entry's names and aliases
                 best_score, best_name = self._best_match_score(all_names, entry)
@@ -101,12 +114,14 @@ class SanctionsScreenerAgent:
                         match_type=match_type,
                         match_score=round(best_score, 4),
                         action_taken=action,
+                        match_category=match_category,
                         details={
                             "matched_on_name": best_name,
                             "entry_type": entry.get("type", "individual"),
                             "entry_nationality": entry.get("nationality"),
                             "entry_dob": entry.get("date_of_birth"),
                             "reason": entry.get("reason", ""),
+                            "match_category": match_category,
                         },
                     )
                     all_matches.append(match_result)
@@ -115,7 +130,6 @@ class SanctionsScreenerAgent:
                     # This includes partial/weak matches that result in 'review'
                     # rather than 'block' — the full match history must be
                     # available for compliance investigations.
-                    entity_id = transaction_id or customer_id or "unknown"
                     await create_sanctions_match(
                         self.db,
                         {
@@ -126,6 +140,7 @@ class SanctionsScreenerAgent:
                             "match_type": match_type,
                             "match_score": best_score,
                             "action_taken": action,
+                            "match_category": match_category,
                         },
                     )
 
@@ -210,7 +225,7 @@ class SanctionsScreenerAgent:
         b_sorted = " ".join(sorted(self._normalize(b).split()))
         return SequenceMatcher(None, a_sorted, b_sorted).ratio()
 
-    def _best_match_score(self, candidate_names: List[str], entry: Dict) -> tuple[float, str]:
+    def _best_match_score(self, candidate_names: list[str], entry: dict) -> tuple[float, str]:
         """Return the best match score and matched name variant.
 
         Checks all combinations of:
@@ -253,7 +268,7 @@ class SanctionsScreenerAgent:
             return "partial"
         return "weak"
 
-    def _determine_action(self, match_type: str, entry: Dict, dob: Optional[str]) -> str:
+    def _determine_action(self, match_type: str, entry: dict, dob: str | None) -> str:
         """Determine the recommended action for a given match.
 
         CBN mandates that exact and strong matches MUST be blocked.
@@ -276,7 +291,7 @@ class SanctionsScreenerAgent:
             return "review"
         return "review"
 
-    def _overall_recommendation(self, matches: List[SanctionsMatchResult]) -> str:
+    def _overall_recommendation(self, matches: list[SanctionsMatchResult]) -> str:
         """Determine the overall screening recommendation across all matches.
 
         'block' takes absolute precedence — a single confirmed match on any
@@ -290,7 +305,7 @@ class SanctionsScreenerAgent:
             return "block"
         return "review"
 
-    def _compute_confidence(self, matches: List[SanctionsMatchResult]) -> float:
+    def _compute_confidence(self, matches: list[SanctionsMatchResult]) -> float:
         """Compute screening confidence based on match quality.
 
         No matches → 0.99 confidence (very high confidence in a clean result).
@@ -302,3 +317,23 @@ class SanctionsScreenerAgent:
         # Confidence based on best match score
         best = max(m.match_score for m in matches)
         return round(best, 4)
+
+    def _list_to_category(self, list_name: str) -> str:
+        """Map a sanctions list name to its watchlist category.
+
+        This categorisation is used by the Watchlist Screening UI tab to filter
+        matches into three sub-categories with distinct badge colours (ROADMAP Section 2):
+        - sanctions (red): OFAC SDN, UN Consolidated, Nigerian domestic sanctions
+        - pep (orange): Politically Exposed Person databases
+        - adverse_media (yellow): adverse media and legal proceedings indicators
+
+        The mapping is based on the list_name keys defined in SANCTIONS_DB.
+        Any unrecognised list defaults to 'sanctions' (most restrictive category).
+        """
+        name_upper = list_name.upper()
+        if "PEP" in name_upper:
+            return "pep"
+        if "ADVERSE" in name_upper or "MEDIA" in name_upper:
+            return "adverse_media"
+        # OFAC, UN, NIGERIAN_DOMESTIC, and internal watchlists default to 'sanctions'
+        return "sanctions"

@@ -4,7 +4,6 @@ Covers: OFAC SDN, UN Consolidated, Nigerian domestic watchlist, PEP database.
 Includes near-matches to demo customer names for fuzzy matching demonstration.
 """
 
-from typing import Dict, List
 
 # ---------------------------------------------------------------------------
 # OFAC SDN List (simulated entries)
@@ -468,7 +467,7 @@ INTERNAL_WATCHLIST = [
 # adding a new list only requires inserting it here — no agent code changes needed.
 # ---------------------------------------------------------------------------
 
-SANCTIONS_DB: Dict[str, List[Dict]] = {
+SANCTIONS_DB: dict[str, list[dict]] = {
     "OFAC_SDN": OFAC_SDN,
     "UN_CONSOLIDATED": UN_CONSOLIDATED,
     "NIGERIAN_DOMESTIC": NIGERIAN_DOMESTIC,
@@ -477,7 +476,7 @@ SANCTIONS_DB: Dict[str, List[Dict]] = {
 }
 
 
-def get_all_entries() -> List[Dict]:
+def get_all_entries() -> list[dict]:
     """Return all entries across all lists."""
     entries = []
     for list_name, entries_list in SANCTIONS_DB.items():
@@ -488,7 +487,7 @@ def get_all_entries() -> List[Dict]:
     return entries
 
 
-def count_by_list() -> Dict[str, int]:
+def count_by_list() -> dict[str, int]:
     """Return count of entries per list."""
     # Useful for dashboard stats and validating list coverage (CBN audit requirement)
     return {name: len(entries) for name, entries in SANCTIONS_DB.items()}

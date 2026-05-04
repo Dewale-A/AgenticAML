@@ -33,14 +33,13 @@ The overall_risk output drives downstream SAR generation:
 
 from __future__ import annotations
 
-import os
 import json
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+import os
+from datetime import datetime, timedelta, timezone
 
 import aiosqlite
 
-from src.database import get_customer, get_customer_transactions, list_alerts, now_wat
+from src.database import get_customer, get_customer_transactions, list_alerts
 from src.governance.audit import log_agent_decision
 from src.models import PatternAnalyzerResult, PatternMatch
 
@@ -74,8 +73,8 @@ class PatternAnalyzerAgent:
     async def analyze(
         self,
         customer_id: str,
-        transaction_id: Optional[str] = None,
-        alert_summaries: Optional[List[Dict]] = None,
+        transaction_id: str | None = None,
+        alert_summaries: list[dict] | None = None,
     ) -> PatternAnalyzerResult:
         """Analyse transaction patterns for a customer over a 90-day window.
 
@@ -93,7 +92,7 @@ class PatternAnalyzerAgent:
         transactions = await get_customer_transactions(self.db, customer_id, days=90)
         alerts = await list_alerts(self.db, customer_id=customer_id, limit=50)
 
-        patterns: List[PatternMatch] = []
+        patterns: list[PatternMatch] = []
 
         # Rule-based pattern detection always runs — provides a deterministic
         # baseline that works in all environments and produces auditable results.
@@ -156,11 +155,11 @@ class PatternAnalyzerAgent:
     # Rule-based pattern detectors
     # ------------------------------------------------------------------
 
-    def _detect_structuring_pattern(self, txns: List[Dict]) -> List[PatternMatch]:
+    def _detect_structuring_pattern(self, txns: list[dict]) -> list[PatternMatch]:
         """Detect smurfing: multiple cash transactions just below the NGN 5M threshold.
 
         Three or more qualifying transactions is the minimum to distinguish
-        a pattern from coincidence. The 90%-of-threshold band (NGN 4.5M–4.99M)
+        a pattern from coincidence. The 90%-of-threshold band (NGN 4.5M-4.99M)
         aligns with FATF's definition of structuring behaviour.
 
         Confidence scales with the number of hits: more transactions in the
@@ -188,7 +187,7 @@ class PatternAnalyzerAgent:
             ]
         return []
 
-    def _detect_rapid_movement(self, txns: List[Dict]) -> List[PatternMatch]:
+    def _detect_rapid_movement(self, txns: list[dict]) -> list[PatternMatch]:
         """Detect rapid fund movement: large inflows quickly followed by outflows.
 
         Classic layering indicator: funds arrive (placement) and are quickly
@@ -237,7 +236,7 @@ class PatternAnalyzerAgent:
             ]
         return []
 
-    def _detect_geographic_anomaly(self, txns: List[Dict]) -> List[PatternMatch]:
+    def _detect_geographic_anomaly(self, txns: list[dict]) -> list[PatternMatch]:
         """Detect geographic anomalies: transactions from many different locations.
 
         Five or more distinct locations is suspicious for a retail Nigerian
@@ -274,10 +273,10 @@ class PatternAnalyzerAgent:
             ]
         return []
 
-    def _detect_time_anomaly(self, txns: List[Dict]) -> List[PatternMatch]:
+    def _detect_time_anomaly(self, txns: list[dict]) -> list[PatternMatch]:
         """Detect unusual transaction times: midnight to 5am WAT.
 
-        Five or more transactions in the 00:00–05:00 WAT window is anomalous
+        Five or more transactions in the 00:00-05:00 WAT window is anomalous
         for a retail customer. Automated ML layering operations and overseas
         principals directing money mules often transact during Nigerian
         nighttime when human oversight is reduced.
@@ -311,7 +310,7 @@ class PatternAnalyzerAgent:
             ]
         return []
 
-    def _detect_circular_transactions(self, txns: List[Dict]) -> List[PatternMatch]:
+    def _detect_circular_transactions(self, txns: list[dict]) -> list[PatternMatch]:
         """Detect circular fund flows: money sent out and returned from same counterparty.
 
         Circular transactions obscure the origin of funds by creating a
@@ -323,7 +322,7 @@ class PatternAnalyzerAgent:
         Minimum NGN 500K per direction filters out routine small-value
         reciprocal payments (e.g., splitting bills, petty cash).
         """
-        counterparties: Dict[str, Dict] = {}
+        counterparties: dict[str, dict] = {}
         for t in txns:
             cp = t.get("counterparty_account", "") or t.get("counterparty_name", "")
             if not cp:
@@ -356,7 +355,7 @@ class PatternAnalyzerAgent:
             ]
         return []
 
-    def _detect_round_amount_pattern(self, txns: List[Dict]) -> List[PatternMatch]:
+    def _detect_round_amount_pattern(self, txns: list[dict]) -> list[PatternMatch]:
         """Detect a pattern of repeated round-number transactions (classic ML indicator).
 
         Five or more transactions that are exact multiples of NGN 1M strongly
@@ -384,7 +383,7 @@ class PatternAnalyzerAgent:
             ]
         return []
 
-    def _detect_layering(self, txns: List[Dict]) -> List[PatternMatch]:
+    def _detect_layering(self, txns: list[dict]) -> list[PatternMatch]:
         """Detect layering: many small transactions through many different channels.
 
         Layering through channel diversity (4+ different payment channels)
@@ -415,7 +414,7 @@ class PatternAnalyzerAgent:
             ]
         return []
 
-    def _detect_pep_patterns(self, customer: Dict, txns: List[Dict]) -> List[PatternMatch]:
+    def _detect_pep_patterns(self, customer: dict, txns: list[dict]) -> list[PatternMatch]:
         """Detect PEP-related corruption patterns: large round-figure inflows from contractors.
 
         A PEP receiving multiple large round-figure transfers from entities
@@ -456,10 +455,10 @@ class PatternAnalyzerAgent:
 
     async def _llm_analyze(
         self,
-        customer: Optional[Dict],
-        txns: List[Dict],
-        alerts: List[Dict],
-        rule_patterns: List[PatternMatch],
+        customer: dict | None,
+        txns: list[dict],
+        alerts: list[dict],
+        rule_patterns: list[PatternMatch],
     ) -> str:
         """Call GPT-4o to augment rule-based analysis with narrative reasoning.
 
@@ -513,14 +512,14 @@ Provide your AML analysis reasoning (max 200 words):"""
             return str(response.content)
         except Exception as e:
             # LLM failure should never crash the pipeline — fall back gracefully
-            return f"LLM analysis unavailable: {str(e)}"
+            return f"LLM analysis unavailable: {e!s}"
 
     # ------------------------------------------------------------------
     # Scoring and helpers
     # ------------------------------------------------------------------
 
     def _assess_overall_risk(
-        self, patterns: List[PatternMatch], customer: Optional[Dict], txns: List[Dict]
+        self, patterns: list[PatternMatch], customer: dict | None, txns: list[dict]
     ) -> str:
         """Determine the overall risk level from the detected pattern set.
 
@@ -550,7 +549,7 @@ Provide your AML analysis reasoning (max 200 words):"""
             return "medium"
         return "low"
 
-    def _recommend_actions(self, risk_level: str, patterns: List[PatternMatch]) -> List[str]:
+    def _recommend_actions(self, risk_level: str, patterns: list[PatternMatch]) -> list[str]:
         """Generate recommended actions for the compliance analyst.
 
         Actions are tiered by risk level (mandatory escalation actions first)
@@ -592,9 +591,9 @@ Provide your AML analysis reasoning (max 200 words):"""
 
     def _build_evidence_summary(
         self,
-        txns: List[Dict],
-        alerts: List[Dict],
-        patterns: List[PatternMatch],
+        txns: list[dict],
+        alerts: list[dict],
+        patterns: list[PatternMatch],
         llm_evidence: str,
     ) -> str:
         """Build a human-readable evidence summary for the SAR supporting evidence section.
@@ -615,7 +614,7 @@ Provide your AML analysis reasoning (max 200 words):"""
             lines.append(f"LLM analysis: {llm_evidence[:300]}")
         return "\n".join(lines)
 
-    def _compute_confidence(self, patterns: List[PatternMatch], txns: List[Dict]) -> float:
+    def _compute_confidence(self, patterns: list[PatternMatch], txns: list[dict]) -> float:
         """Compute the overall confidence of the pattern analysis result.
 
         No transactions: 0.5 (uncertain — no data to analyse).
@@ -640,7 +639,7 @@ Provide your AML analysis reasoning (max 200 words):"""
         except (ValueError, TypeError):
             return datetime.now(WAT)
 
-    def _date_range(self, txns: List[Dict]) -> str:
+    def _date_range(self, txns: list[dict]) -> str:
         """Return a human-readable date range string for a list of transactions.
 
         Used in pattern descriptions so analysts can quickly see the temporal

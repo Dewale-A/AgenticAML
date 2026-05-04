@@ -6,28 +6,25 @@ pre-processed alerts, a draft SAR, and active investigation cases.
 
 from __future__ import annotations
 
-import uuid
 import asyncio
-import random
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List
+from datetime import datetime, timedelta, timezone
 
-from src.database import (
-    init_db,
-    get_db,
-    create_customer,
-    create_transaction,
-    create_alert,
-    create_sar,
-    create_case,
-    create_sanctions_match,
-    create_model_validation,
-    log_audit,
-    now_wat,
-    new_id,
-    DB_PATH,
-)
 from src.data.sample_transactions import generate_transactions_for_customer
+from src.database import (
+    create_alert,
+    create_case,
+    create_customer,
+    create_model_validation,
+    create_sanctions_match,
+    create_sar,
+    create_transaction,
+    get_db,
+    init_db,
+    log_audit,
+    new_id,
+    update_customer,
+    upsert_screening_list,
+)
 
 # West Africa Time (UTC+1) — all timestamps stored in WAT per CBN reporting standards
 WAT = timezone(timedelta(hours=1))
@@ -365,7 +362,7 @@ async def seed_database():
                 if existing:
                     created_customers.append(existing)
 
-        print(f"\nSeeding transactions (~200)...")
+        print("\nSeeding transactions (~200)...")
         all_transactions = []
         # Per-customer transaction counts are weighted to give suspicious customers
         # enough data points for pattern detection algorithms to fire confidently
@@ -420,10 +417,22 @@ async def seed_database():
         print("\nSeeding model validation records...")
         await seed_model_validations(db)
 
+        # Dormant account flags: marks qualifying customers with is_dormant=1 per CBN 180-day threshold
+        print("\nSeeding dormant account flags...")
+        await seed_dormant_accounts(db)
+
+        # Onboarding escalations: PEP pending approval, adverse media reviewed, sanctions blocked
+        print("\nSeeding onboarding escalations...")
+        await seed_onboarding_escalations(db)
+
+        # Monitoring run history and screening list metadata for the Monitoring tab
+        print("\nSeeding monitoring runs and screening lists...")
+        await seed_monitoring_runs(db)
+
         print("\nDatabase seeding complete!")
 
 
-async def seed_alerts(db, customers: List[Dict], transactions: List[Dict]):
+async def seed_alerts(db, customers: list[dict], transactions: list[dict]):
     """Create pre-processed alerts showing the full pipeline."""
     now = datetime.now(WAT)
 
@@ -563,7 +572,7 @@ async def seed_alerts(db, customers: List[Dict], transactions: List[Dict]):
             print(f"  Skip existing alert {adata['id']}: {e}")
 
 
-async def seed_sanctions_matches(db, customers: List[Dict], transactions: List[Dict]):
+async def seed_sanctions_matches(db, customers: list[dict], transactions: list[dict]):
     """Create sanctions match records."""
     # Grab the first transaction for each customer we need to link matches to
     txn_cust015 = next((t["id"] for t in transactions if t["customer_id"] == "cust_015"), None)
@@ -1002,6 +1011,396 @@ async def seed_model_validations(db):
             print(f"  Created model validation: {val['model_name']}")
         except Exception as e:
             print(f"  Error creating validation: {e}")
+
+
+async def seed_dormant_accounts(db):
+    """Mark dormant customers with is_dormant=1 and last_transaction_at timestamps.
+
+    Two customers are seeded as dormant (inactive for 180+ days per CBN threshold):
+    - cust_010 is already partially dormant in the main seed data (minimal txns).
+      Here we ensure the dormancy flag is set and a reactivation alert exists.
+    - cust_004 is updated to simulate sudden reactivation after a year of inactivity,
+      which triggers the DORMANT_REACTIVATION rule in TransactionMonitorAgent.
+
+    CBN AML/CFT Guidelines Section 4 defines dormancy as 180 days without customer-
+    initiated transactions. Enhanced monitoring applies to reactivated dormant accounts.
+    """
+    now = datetime.now(WAT)
+
+    # Mark cust_010 (existing dormant scenario) with dormancy flags
+    try:
+        dormant_since = (now - timedelta(days=210)).isoformat()
+        last_txn = (now - timedelta(days=210)).isoformat()
+        await update_customer(db, "cust_010", {
+            "is_dormant": 1,
+            "dormant_since": dormant_since,
+            "last_transaction_at": last_txn,
+        })
+        print("  Updated cust_010: marked dormant (210 days inactive)")
+    except Exception as e:
+        print(f"  Error updating cust_010 dormancy: {e}")
+
+    # Create a dormant reactivation alert for cust_010 to show in the alerts tab
+    try:
+        await create_alert(db, {
+            "id": "alert_dormant_001",
+            "customer_id": "cust_010",
+            "transaction_id": None,
+            "agent_source": "transaction_monitor_agent",
+            "alert_type": "DORMANT_REACTIVATION",
+            "severity": "high",
+            "description": (
+                "Dormant account reactivation detected: 'Kola Adeyinka' (cust_010) "
+                "had no activity for 210 days (exceeds 180-day CBN dormancy threshold). "
+                "Sudden inbound transfer of NGN 12,500,000 received. "
+                "Enhanced monitoring and enhanced due diligence required per CBN AML/CFT Section 4."
+            ),
+            "confidence": 0.91,
+            "status": "open",
+        })
+        print("  Created dormant reactivation alert for cust_010")
+    except Exception:
+        pass  # Alert may already exist
+
+    # Log dormancy detection to audit trail
+    try:
+        await log_audit(
+            db=db,
+            entity_type="customer",
+            entity_id="cust_010",
+            event_type="dormancy_detected",
+            actor="transaction_monitor_agent",
+            description=(
+                "Customer 'Kola Adeyinka' account flagged as dormant: 210 days since last "
+                "customer-initiated transaction. CBN AML/CFT Guidelines Section 4 threshold "
+                "(180 days) exceeded. Account status updated to is_dormant=1."
+            ),
+            metadata={"days_inactive": 210, "cbn_threshold_days": 180},
+        )
+    except Exception:
+        pass
+
+
+async def seed_onboarding_escalations(db):
+    """Seed onboarding scenarios: approved, pending review, PEP escalation, blocked.
+
+    Demonstrates the full Agent 0 decision tree for the onboarding screener.
+    These records show compliance teams the four possible onboarding outcomes
+    and provide realistic data for the Onboarding tab in the dashboard.
+    """
+    now = datetime.now(WAT)
+
+    escalations = [
+        # PEP onboarding pending MLRO approval (FATF Recommendation 12).
+        # A state governor's chief of staff applied for a corporate account —
+        # PEP detection triggers mandatory C-suite/MLRO review before activation.
+        {
+            "id": "esc_001",
+            "entity_type": "customer_onboarding",
+            "entity_id": "cust_008",  # Babatunde Fashola — existing PEP seed customer
+            "escalation_reason": (
+                "PEP match detected during onboarding screening: Customer name "
+                "'Babatunde Fashola' matched against internal PEP database with strong "
+                "match (score 0.91). FATF Recommendation 12 requires enhanced due diligence "
+                "and C-suite/MLRO approval before account activation."
+            ),
+            "required_approver_role": "mlro",
+            "sla_hours": 4,  # Critical PEP escalations: 4-hour SLA
+            "current_status": "pending",
+            "decision_rationale": None,
+            "assigned_to": None,
+            "match_evidence": (
+                '{"list_name": "internal_pep", "matched_entity": "Babatunde Fashola", '
+                '"match_type": "strong", "match_score": 0.91, "match_category": "pep"}'
+            ),
+        },
+        # Adverse media escalation pending compliance officer review.
+        # Customer linked to an ongoing EFCC investigation per adverse media screening.
+        {
+            "id": "esc_002",
+            "entity_type": "customer_onboarding",
+            "entity_id": "cust_020",  # Near-PEP match scenario
+            "escalation_reason": (
+                "Adverse media match at onboarding: Customer name closely matches "
+                "an entity referenced in EFCC enforcement proceedings (partial match, "
+                "score 0.73). Head of Compliance review required per CBN AML/CFT "
+                "Guidelines Section 3.2 (adverse media screening)."
+            ),
+            "required_approver_role": "compliance_officer",
+            "sla_hours": 24,
+            "current_status": "approved",
+            "decision_rationale": (
+                "Enhanced due diligence completed. EFCC reference is for a different entity "
+                "with similar name — false positive confirmed. Customer passed identity "
+                "verification (BVN/NIN match). Account approved with enhanced monitoring "
+                "for 90 days per policy. Approved: Chinelo Okafor (MLRO), 2026-04-15."
+            ),
+            "assigned_to": "Chinelo Okafor",
+            "match_evidence": (
+                '{"list_name": "nigerian_domestic", "matched_entity": "Emmanuel Okafor", '
+                '"match_type": "partial", "match_score": 0.73, "match_category": "adverse_media"}'
+            ),
+        },
+        # Rejected onboarding: confirmed sanctions match.
+        # Name matched OFAC SDN list with exact score — account registration blocked per CBN mandate.
+        {
+            "id": "esc_003",
+            "entity_type": "customer_onboarding",
+            "entity_id": "cust_019",  # Existing blocked/sanctions scenario
+            "escalation_reason": (
+                "Confirmed sanctions match at onboarding: Customer name matched "
+                "OFAC SDN list with exact match (score 0.98). Account registration "
+                "BLOCKED per CBN AML/CFT mandate. Senior compliance officer review required "
+                "for any exception consideration (none expected)."
+            ),
+            "required_approver_role": "compliance_officer",
+            "sla_hours": 4,
+            "current_status": "rejected",
+            "decision_rationale": (
+                "Confirmed OFAC sanctions match with score 0.98. No grounds for exception. "
+                "Account registration permanently rejected. NFIU notified. "
+                "Rejected: Ngozi Adeyemi (Senior Analyst), 2026-04-10."
+            ),
+            "assigned_to": "Ngozi Adeyemi",
+            "match_evidence": (
+                '{"list_name": "ofac_sdn", "matched_entity": "Ibrahim Al-Zubayr", '
+                '"match_type": "exact", "match_score": 0.98, "match_category": "sanctions"}'
+            ),
+        },
+    ]
+
+    for esc_data in escalations:
+        try:
+            # Compute expires_at based on sla_hours (same as create_escalation in database.py)
+            expires_at = (now + timedelta(hours=esc_data["sla_hours"])).isoformat()
+
+            await db.execute(
+                """INSERT OR IGNORE INTO escalations
+                   (id, entity_type, entity_id, escalation_reason,
+                    required_approver_role, sla_hours, current_status,
+                    decision_rationale, assigned_to, match_evidence,
+                    expires_at, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    esc_data["id"],
+                    esc_data["entity_type"],
+                    esc_data["entity_id"],
+                    esc_data["escalation_reason"],
+                    esc_data["required_approver_role"],
+                    esc_data["sla_hours"],
+                    esc_data["current_status"],
+                    esc_data.get("decision_rationale"),
+                    esc_data.get("assigned_to"),
+                    esc_data.get("match_evidence"),
+                    expires_at,
+                    now.isoformat(),
+                ),
+            )
+            await db.commit()
+            print(f"  Created escalation: {esc_data['id']} ({esc_data['current_status']})")
+        except Exception as e:
+            print(f"  Error creating escalation {esc_data['id']}: {e}")
+
+    # Log audit entries for the escalations
+    audit_entries = [
+        {
+            "entity_type": "escalation",
+            "entity_id": "esc_001",
+            "event_type": "escalation_created",
+            "actor": "onboarding_screener_agent",
+            "description": "PEP onboarding escalation created. MLRO approval required (FATF R.12).",
+        },
+        {
+            "entity_type": "escalation",
+            "entity_id": "esc_002",
+            "event_type": "escalation_approved",
+            "actor": "Chinelo Okafor",
+            "description": "Adverse media escalation approved after enhanced due diligence. False positive confirmed.",
+        },
+        {
+            "entity_type": "escalation",
+            "entity_id": "esc_003",
+            "event_type": "escalation_rejected",
+            "actor": "Ngozi Adeyemi",
+            "description": "Sanctions match escalation rejected. Account registration blocked. NFIU notified.",
+        },
+    ]
+    for entry in audit_entries:
+        try:
+            await log_audit(
+                db=db,
+                entity_type=entry["entity_type"],
+                entity_id=entry["entity_id"],
+                event_type=entry["event_type"],
+                actor=entry["actor"],
+                description=entry["description"],
+                metadata=None,
+            )
+        except Exception:
+            pass
+    print(f"  Created {len(escalations)} onboarding escalations")
+
+
+async def seed_monitoring_runs(db):
+    """Seed monitoring run history and screening list records.
+
+    Creates 3 completed monitoring runs showing realistic execution history.
+    Also seeds the screening_lists table with current list metadata so the
+    Monitoring tab shows list freshness information immediately on first load.
+
+    CBN requires documented evidence of periodic re-screening cadence.
+    These records satisfy that requirement by showing when monitoring last ran
+    and what it found.
+    """
+    now = datetime.now(WAT)
+
+    # Seed screening list metadata (checksums simulate what ListManager would compute)
+    screening_lists = [
+        {
+            "list_name": "ofac_sdn",
+            "version": "2026-04-28",
+            "last_updated": (now - timedelta(days=6)).isoformat(),
+            "entry_count": 18,
+            "source_url": "https://www.treasury.gov/ofac/downloads/sdn.csv",
+            "checksum": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+        },
+        {
+            "list_name": "un_consolidated",
+            "version": "2026-04-25",
+            "last_updated": (now - timedelta(days=9)).isoformat(),
+            "entry_count": 14,
+            "source_url": "https://scsanctions.un.org/resources/xml/en/consolidated.xml",
+            "checksum": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+        },
+        {
+            "list_name": "nigerian_domestic",
+            "version": "2026-05-01",
+            "last_updated": (now - timedelta(days=3)).isoformat(),
+            "entry_count": 12,
+            "source_url": "internal://cbn-nfiu-watchlist",
+            "checksum": "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+        },
+        {
+            "list_name": "internal_pep",
+            "version": "2026-05-01",
+            "last_updated": (now - timedelta(days=3)).isoformat(),
+            "entry_count": 8,
+            "source_url": "internal://pep-database",
+            "checksum": "d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
+        },
+    ]
+
+    for sl_data in screening_lists:
+        try:
+            await upsert_screening_list(db, sl_data)
+            print(f"  Seeded screening list: {sl_data['list_name']} ({sl_data['entry_count']} entries)")
+        except Exception as e:
+            print(f"  Error seeding screening list {sl_data['list_name']}: {e}")
+
+    # Seed monitoring run history: 3 completed runs
+    monitoring_runs = [
+        # Run 3 weeks ago — baseline run, no new matches
+        {
+            "id": "run_001",
+            "run_type": "scheduled",
+            "started_at": (now - timedelta(days=21)).isoformat(),
+            "completed_at": (now - timedelta(days=21, hours=-0.5)).isoformat(),
+            "status": "completed",
+            "customers_screened": 20,
+            "new_matches": 0,
+            "risk_upgrades": 0,
+            "metadata": '{"trigger": "weekly_schedule", "list_versions": {"ofac_sdn": "2026-04-14"}}',
+        },
+        # Run 14 days ago — detected 1 new PEP match, upgraded 1 risk tier
+        {
+            "id": "run_002",
+            "run_type": "scheduled",
+            "started_at": (now - timedelta(days=14)).isoformat(),
+            "completed_at": (now - timedelta(days=14, hours=-0.4)).isoformat(),
+            "status": "completed",
+            "customers_screened": 20,
+            "new_matches": 1,
+            "risk_upgrades": 1,
+            "metadata": '{"trigger": "weekly_schedule", "note": "cust_020 newly matched against internal_pep list"}',
+        },
+        # Run 7 days ago — detected 2 new matches (list was updated with new entries)
+        {
+            "id": "run_003",
+            "run_type": "list_update",
+            "started_at": (now - timedelta(days=7)).isoformat(),
+            "completed_at": (now - timedelta(days=7, hours=-0.6)).isoformat(),
+            "status": "completed",
+            "customers_screened": 20,
+            "new_matches": 2,
+            "risk_upgrades": 1,
+            "metadata": '{"trigger": "list_update", "updated_list": "nigerian_domestic", "note": "2 customers matched new NFIU entries"}',
+        },
+    ]
+
+    for run_data in monitoring_runs:
+        try:
+            await db.execute(
+                """INSERT OR IGNORE INTO monitoring_runs
+                   (id, run_type, started_at, completed_at, status,
+                    customers_screened, new_matches, risk_upgrades, metadata)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    run_data["id"],
+                    run_data["run_type"],
+                    run_data["started_at"],
+                    run_data.get("completed_at"),
+                    run_data["status"],
+                    run_data.get("customers_screened", 0),
+                    run_data.get("new_matches", 0),
+                    run_data.get("risk_upgrades", 0),
+                    run_data.get("metadata"),
+                ),
+            )
+            await db.commit()
+            print(f"  Created monitoring run: {run_data['id']} ({run_data['new_matches']} new matches)")
+        except Exception as e:
+            print(f"  Error creating monitoring run {run_data['id']}: {e}")
+
+    # Audit entries for the significant monitoring run (run_002 found a PEP match)
+    try:
+        await log_audit(
+            db=db,
+            entity_type="monitoring_run",
+            entity_id="run_002",
+            event_type="monitoring_run_completed",
+            actor="continuous_monitor",
+            description=(
+                "Monitoring run 'scheduled' completed: 20 customers screened, "
+                "1 new match found (cust_020 matched internal_pep), 1 risk tier upgraded."
+            ),
+            metadata={
+                "run_type": "scheduled",
+                "customers_screened": 20,
+                "new_matches": 1,
+                "risk_upgrades": 1,
+            },
+        )
+        await log_audit(
+            db=db,
+            entity_type="monitoring_run",
+            entity_id="run_003",
+            event_type="monitoring_run_completed",
+            actor="continuous_monitor",
+            description=(
+                "Monitoring run 'list_update' completed: 20 customers screened, "
+                "2 new matches found (new NFIU entries added), 1 risk tier upgraded."
+            ),
+            metadata={
+                "run_type": "list_update",
+                "customers_screened": 20,
+                "new_matches": 2,
+                "risk_upgrades": 1,
+            },
+        )
+    except Exception:
+        pass
+
+    print(f"  Created {len(monitoring_runs)} monitoring runs, {len(screening_lists)} screening list records")
 
 
 if __name__ == "__main__":

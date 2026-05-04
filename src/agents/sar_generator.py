@@ -26,9 +26,8 @@ This agent includes the deadline notice in every SAR draft.
 
 from __future__ import annotations
 
-import os
 import json
-from typing import Any, Dict, List, Optional
+import os
 
 import aiosqlite
 
@@ -70,12 +69,12 @@ class SarGeneratorAgent:
     async def generate(
         self,
         customer_id: str,
-        alert_id: Optional[str] = None,
-        transaction_id: Optional[str] = None,
-        pattern_result: Optional[Dict] = None,
-        monitor_result: Optional[Dict] = None,
-        kyc_result: Optional[Dict] = None,
-        sanctions_result: Optional[Dict] = None,
+        alert_id: str | None = None,
+        transaction_id: str | None = None,
+        pattern_result: dict | None = None,
+        monitor_result: dict | None = None,
+        kyc_result: dict | None = None,
+        sanctions_result: dict | None = None,
     ) -> SarGeneratorResult:
         """Generate a draft SAR/STR and persist it for mandatory human review.
 
@@ -185,14 +184,14 @@ class SarGeneratorAgent:
 
     def _rule_based_narrative(
         self,
-        customer: Optional[Dict],
-        transaction: Optional[Dict],
-        alert: Optional[Dict],
-        recent_alerts: List[Dict],
-        pattern_result: Optional[Dict],
-        monitor_result: Optional[Dict],
-        kyc_result: Optional[Dict],
-        sanctions_result: Optional[Dict],
+        customer: dict | None,
+        transaction: dict | None,
+        alert: dict | None,
+        recent_alerts: list[dict],
+        pattern_result: dict | None,
+        monitor_result: dict | None,
+        kyc_result: dict | None,
+        sanctions_result: dict | None,
         typology: str,
     ) -> str:
         """Generate a structured NFIU-format SAR narrative without an LLM.
@@ -287,7 +286,7 @@ DO NOT submit to NFIU without authorised officer approval and signature.
 """
         return narrative.strip()
 
-    def _format_transaction_section(self, txn: Optional[Dict]) -> str:
+    def _format_transaction_section(self, txn: dict | None) -> str:
         """Format the transaction details block for the SAR narrative."""
         if not txn:
             return "No single transaction: see customer alert history."
@@ -305,14 +304,14 @@ DO NOT submit to NFIU without authorised officer approval and signature.
 
     async def _llm_narrative(
         self,
-        customer: Optional[Dict],
-        transaction: Optional[Dict],
-        alert: Optional[Dict],
-        recent_alerts: List[Dict],
-        pattern_result: Optional[Dict],
-        monitor_result: Optional[Dict],
-        kyc_result: Optional[Dict],
-        sanctions_result: Optional[Dict],
+        customer: dict | None,
+        transaction: dict | None,
+        alert: dict | None,
+        recent_alerts: list[dict],
+        pattern_result: dict | None,
+        monitor_result: dict | None,
+        kyc_result: dict | None,
+        sanctions_result: dict | None,
         typology: str,
     ) -> str:
         """Generate a professional SAR narrative using GPT-4o.
@@ -371,10 +370,10 @@ Mark as DRAFT - Human Approval Required."""
 
     def _determine_typology(
         self,
-        pattern_result: Optional[Dict],
-        monitor_result: Optional[Dict],
-        sanctions_result: Optional[Dict],
-        customer: Optional[Dict],
+        pattern_result: dict | None,
+        monitor_result: dict | None,
+        sanctions_result: dict | None,
+        customer: dict | None,
     ) -> str:
         """Select the primary AML typology for the SAR from the available signals.
 
@@ -414,10 +413,10 @@ Mark as DRAFT - Human Approval Required."""
 
     def _determine_priority(
         self,
-        pattern_result: Optional[Dict],
-        monitor_result: Optional[Dict],
-        sanctions_result: Optional[Dict],
-        transaction: Optional[Dict],
+        pattern_result: dict | None,
+        monitor_result: dict | None,
+        sanctions_result: dict | None,
+        transaction: dict | None,
     ) -> str:
         """Determine the SAR filing priority from the available risk signals.
 

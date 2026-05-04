@@ -1,0 +1,90 @@
+# ===========================================================================
+# AgenticAML Project Configuration
+# ===========================================================================
+# Ruff, mypy, and pytest settings for enterprise-grade AML compliance code.
+# These rules enforce async safety, security hygiene, and code quality
+# standards appropriate for financial services software.
+# ===========================================================================
+
+[project]
+name = "agenticaml"
+version = "2.0.0"
+description = "AI-Powered AML Compliance for Nigerian Financial Institutions"
+requires-python = ">=3.12"
+
+# ---------------------------------------------------------------------------
+# Ruff: Linting and formatting
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes (unused imports, undefined names)
+    "I",      # isort (import ordering)
+    "B",      # flake8-bugbear (common bugs, opinionated checks)
+    "ASYNC",  # flake8-async (async anti-patterns, missing awaits)
+    "S",      # flake8-bandit (security checks inline with linting)
+    "SIM",    # flake8-simplify (simplifiable code)
+    "UP",     # pyupgrade (modernize syntax)
+    "RUF",    # ruff-specific rules
+    "T20",    # flake8-print (no stray print statements in production)
+    "PIE",    # flake8-pie (misc. lint)
+    "C4",     # flake8-comprehensions (better list/dict comprehensions)
+    "DTZ",    # flake8-datetimez (enforce timezone-aware datetimes)
+    "LOG",    # flake8-logging (logging best practices)
+    "G",      # flake8-logging-format
+]
+
+ignore = [
+    "S101",   # assert used (OK in tests)
+    "S608",   # SQL injection (we use parameterized queries, false positives)
+    "T201",   # print found (we use print in seed scripts and CLI)
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function call in default arg (FastAPI Depends pattern)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S106", "T201"]
+"src/data/**" = ["T201", "S311"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ---------------------------------------------------------------------------
+# Mypy: Type checking with focus on async correctness
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+# Strict mode would be ideal but requires full type annotation pass.
+# For now, focus on catching async/await mistakes and wrong return types.
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+
+# ---------------------------------------------------------------------------
+# Pytest: Test configuration
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+# Enable verbose output by default for CI/review visibility
+addopts = "-v --tb=short"
+
+# ---------------------------------------------------------------------------
+# Bandit: Security scanning
+# ---------------------------------------------------------------------------
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "node_modules"]
+# Focus on medium+ severity to avoid noise from low-confidence findings
+severity = "medium"
+confidence = "medium"

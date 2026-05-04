@@ -6,8 +6,7 @@ Generates realistic Nigerian banking transactions with suspicious patterns.
 from __future__ import annotations
 
 import random
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime, timedelta, timezone
 
 # West Africa Time (UTC+1) — all timestamps anchored to WAT for CBN reporting compliance
 WAT = timezone(timedelta(hours=1))
@@ -68,7 +67,7 @@ def random_timestamp(days_back_max: int = 90, days_back_min: int = 0) -> str:
     return ts.isoformat()
 
 
-def generate_normal_transaction(customer_id: str, customer_name: str) -> Dict:
+def generate_normal_transaction(customer_id: str, customer_name: str) -> dict:
     """Generate a normal, non-suspicious transaction."""
     direction = random.choice(["inbound", "outbound"])
     # Limit normal transactions to everyday retail types — avoids accidental pattern triggers
@@ -77,7 +76,7 @@ def generate_normal_transaction(customer_id: str, customer_name: str) -> Dict:
         "customer_id": customer_id,
         "counterparty_name": f"Customer {random.randint(1000, 9999)}",
         "counterparty_account": random_account(),
-        # NGN 5,000 – 500,000 range represents typical retail/SME activity
+        # NGN 5,000 - 500,000 range represents typical retail/SME activity
         "amount": random_amount(5_000, 500_000),
         "currency": "NGN",
         "transaction_type": txn_type,
@@ -91,7 +90,7 @@ def generate_normal_transaction(customer_id: str, customer_name: str) -> Dict:
     }
 
 
-def generate_structuring_transactions(customer_id: str, count: int = 5) -> List[Dict]:
+def generate_structuring_transactions(customer_id: str, count: int = 5) -> list[dict]:
     """Generate structuring pattern: multiple cash txns just below NGN 5M."""
     # Structuring (smurfing): deliberately breaking a large amount into multiple deposits
     # just below the NGN 5,000,000 Currency Transaction Report (CTR) threshold to evade
@@ -99,7 +98,7 @@ def generate_structuring_transactions(customer_id: str, count: int = 5) -> List[
     txns = []
     base_time = datetime.now(WAT) - timedelta(days=random.randint(1, 30))
     for i in range(count):
-        # All amounts in the NGN 4.4M – 4.95M band — clearly sub-threshold but large
+        # All amounts in the NGN 4.4M - 4.95M band — clearly sub-threshold but large
         amount = random_amount(4_400_000, 4_950_000, round_to=50_000)
         # Space deposits ~4 hours apart to simulate visits to different branches
         ts = base_time - timedelta(hours=i * 4 + random.uniform(0, 3))
@@ -120,7 +119,7 @@ def generate_structuring_transactions(customer_id: str, count: int = 5) -> List[
     return txns
 
 
-def generate_rapid_movement_transactions(customer_id: str) -> List[Dict]:
+def generate_rapid_movement_transactions(customer_id: str) -> list[dict]:
     """Generate rapid fund movement: large inflows followed quickly by outflows."""
     # Classic ML layering typology: funds arrive from an offshore source then are
     # immediately dispersed across multiple domestic accounts to break the audit trail.
@@ -175,7 +174,7 @@ def generate_rapid_movement_transactions(customer_id: str) -> List[Dict]:
     return txns
 
 
-def generate_dormant_account_transaction(customer_id: str) -> Dict:
+def generate_dormant_account_transaction(customer_id: str) -> dict:
     """Generate a large transaction on a previously dormant account."""
     # CBN guidelines define a dormant account as one with no customer-initiated transactions
     # for 12 months (banks) or 6 months (MFBs). A sudden large transaction on a dormant
@@ -197,7 +196,7 @@ def generate_dormant_account_transaction(customer_id: str) -> Dict:
     }
 
 
-def generate_round_amount_transactions(customer_id: str, count: int = 6) -> List[Dict]:
+def generate_round_amount_transactions(customer_id: str, count: int = 6) -> list[dict]:
     """Generate pattern of round-number transfers (classic ML indicator)."""
     # Exact round-figure amounts (5M, 10M, 15M, 20M) are a well-documented FATF typology.
     # Unlike structuring (amounts just below a threshold), this pattern reflects
@@ -224,7 +223,7 @@ def generate_round_amount_transactions(customer_id: str, count: int = 6) -> List
     return txns
 
 
-def generate_high_risk_geo_transaction(customer_id: str) -> Dict:
+def generate_high_risk_geo_transaction(customer_id: str) -> dict:
     """Generate a transaction involving a high-risk jurisdiction."""
     # Transactions to OFAC/UN sanctioned countries (Iran, DPRK, Sudan) are prohibited
     # under US secondary sanctions and CBN's Anti-Money Laundering/CFT frameworks.
@@ -246,7 +245,7 @@ def generate_high_risk_geo_transaction(customer_id: str) -> Dict:
     }
 
 
-def generate_pep_transactions(customer_id: str, count: int = 4) -> List[Dict]:
+def generate_pep_transactions(customer_id: str, count: int = 4) -> list[dict]:
     """Generate PEP-related large round-figure transactions."""
     # PEP typology: elected official receives large round amounts from government contractors.
     # FATF Recommendation 12 requires financial institutions to identify the source of funds
@@ -273,16 +272,16 @@ def generate_pep_transactions(customer_id: str, count: int = 4) -> List[Dict]:
 
 
 def generate_transactions_for_customer(
-    customer: Dict,
+    customer: dict,
     total_count: int = 10,
-    suspicious_type: Optional[str] = None,
-) -> List[Dict]:
+    suspicious_type: str | None = None,
+) -> list[dict]:
     """
     Generate a mix of transactions for a customer.
     suspicious_type: structuring | rapid_movement | dormant | round_amounts |
                      high_risk_geo | pep | None (normal)
     """
-    txns: List[Dict] = []
+    txns: list[dict] = []
     customer_id = customer["id"]
     customer_name = customer["name"]
 

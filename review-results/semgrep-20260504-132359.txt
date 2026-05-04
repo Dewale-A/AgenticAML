@@ -1,0 +1,97 @@
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 48 files with 1028 Code rules:
+                                                                                                                        
+  Language      Rules   Files          Origin      Rules                                                                
+ ─────────────────────────────        ───────────────────                                                               
+  <multilang>      45      48          Community    1028                                                                
+  python          236      24                                                                                           
+                                                                                                                        
+                
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+✅ Scan completed successfully.
+ • Findings: 16 (16 blocking)
+ • Rules run: 281
+ • Targets scanned: 48
+ • Parsed lines: ~100.0%
+ • No ignore information available
+Ran 281 rules on 48 files: 16 findings.
+                    
+                    
+┌──────────────────┐
+│ 16 Code Findings │
+└──────────────────┘
+                                                                   
+    /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py
+   ❯❯❱ python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+          ❰❰ Blocking ❱❱
+          Avoiding SQL string concatenation: untrusted input concatenated with raw SQL query can result in SQL
+          Injection. In order to execute raw query safely, prepared statement should be used. SQLAlchemy      
+          provides TextualSQL to easily used prepared statement with named parameters. For complex SQL        
+          composition, use SQL Expression Language or Schema Definition Language. In most cases, SQLAlchemy   
+          ORM will be a better option.                                                                        
+          Details: https://sg.run/2b1L                                                                        
+                                                                                                              
+          476┆ async with db.execute(
+          477┆     f"SELECT * FROM audit_trail {where} ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+          478┆     params,
+          479┆ ) as cursor:
+            ⋮┆----------------------------------------
+          565┆ await db.execute(f"UPDATE customers SET {set_clause} WHERE id = ?", values)
+            ⋮┆----------------------------------------
+          639┆ async with db.execute(
+          640┆     f"SELECT * FROM transactions {where} ORDER BY timestamp DESC LIMIT ? OFFSET ?", params
+          641┆ ) as cur:
+            ⋮┆----------------------------------------
+          758┆ async with db.execute(
+          759┆     f"SELECT * FROM alerts {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+          760┆ ) as cur:
+            ⋮┆----------------------------------------
+          769┆ await db.execute(f"UPDATE alerts SET {set_clause} WHERE id = ?", values)
+            ⋮┆----------------------------------------
+          849┆ async with db.execute(
+          850┆     f"SELECT * FROM sanctions_matches {where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+               params                                                                                   
+          851┆ ) as cur:
+            ⋮┆----------------------------------------
+          860┆ await db.execute(f"UPDATE sanctions_matches SET {set_clause} WHERE id = ?", values)
+            ⋮┆----------------------------------------
+          935┆ async with db.execute(
+          936┆     f"SELECT * FROM sars {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+          937┆ ) as cur:
+            ⋮┆----------------------------------------
+          951┆ await db.execute(f"UPDATE sars SET {set_clause} WHERE id = ?", values)
+            ⋮┆----------------------------------------
+          1030┆ async with db.execute(
+          1031┆     f"SELECT * FROM cases {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+          1032┆ ) as cur:
+            ⋮┆----------------------------------------
+          1046┆ await db.execute(f"UPDATE cases SET {set_clause} WHERE id = ?", values)
+            ⋮┆----------------------------------------
+          1202┆ async with db.execute(
+          1203┆     f"SELECT * FROM escalations {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+          1204┆ ) as cur:
+            ⋮┆----------------------------------------
+          1217┆ await db.execute(f"UPDATE escalations SET {set_clause} WHERE id = ?", values)
+            ⋮┆----------------------------------------
+          1286┆ async with db.execute(
+          1287┆     f"SELECT * FROM monitoring_runs {where} ORDER BY started_at DESC LIMIT ? OFFSET ?",
+               params                                                                                  
+          1288┆ ) as cur:
+            ⋮┆----------------------------------------
+          1297┆ await db.execute(f"UPDATE monitoring_runs SET {set_clause} WHERE id = ?", values)
+                                                               
+    /Users/dewale001/.openclaw/workspace/AgenticAML/src/main.py
+    ❯❱ python.fastapi.security.wildcard-cors.wildcard-cors
+          ❰❰ Blocking ❱❱
+          CORS policy allows any origin (using wildcard '*'). This is insecure and should be avoided.
+          Details: https://sg.run/KxApY                                                              
+                                                                                                     
+          128┆ allow_origins=["*"],
+

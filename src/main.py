@@ -9,71 +9,71 @@ from __future__ import annotations
 import os
 import time
 from contextlib import asynccontextmanager
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import aiosqlite
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.agents.case_manager import CaseManagerAgent
+from src.agents.kyc_verifier import KycVerifierAgent
+from src.agents.onboarding_screener import OnboardingScreenerAgent
+from src.agents.pattern_analyzer import PatternAnalyzerAgent
+from src.agents.sanctions_screener import SanctionsScreenerAgent
+from src.agents.sar_generator import SarGeneratorAgent
+from src.agents.transaction_monitor import TransactionMonitorAgent
 from src.database import (
-    init_db,
-    get_db,
-    get_dashboard_stats,
-    get_audit_trail,
-    list_customers,
-    get_customer,
-    update_customer,
-    list_transactions,
-    get_transaction,
-    list_alerts,
-    get_alert,
-    update_alert,
-    list_sanctions_matches,
-    get_sanctions_match,
-    update_sanctions_match,
-    list_sars,
-    get_sar,
-    update_sar,
-    list_cases,
-    get_case,
-    update_case,
     create_model_validation,
-    list_model_validations,
     create_transaction,
+    get_alert,
+    get_audit_trail,
+    get_case,
+    get_customer,
+    get_dashboard_stats,
+    get_db,
+    get_escalation,
+    get_monitoring_run,
+    get_sanctions_match,
+    get_sar,
+    get_transaction,
+    init_db,
+    list_alerts,
+    list_cases,
+    list_customers,
+    list_escalations,
+    list_model_validations,
+    list_monitoring_runs,
+    list_sanctions_matches,
+    list_sars,
+    list_transactions,
     new_id,
     now_wat,
+    update_alert,
+    update_case,
+    update_customer,
+    update_sanctions_match,
+    update_sar,
 )
+from src.governance.audit import log_human_decision
+from src.governance.engine import GovernanceEngine
+from src.governance.escalation import EscalationWorkflow
 from src.models import (
-    Customer,
-    CustomerCreate,
-    Transaction,
-    TransactionCreate,
-    BatchScreenRequest,
-    Alert,
     AlertAssign,
     AlertResolve,
-    SanctionsScreenRequest,
-    SanctionsMatchReview,
-    Sar,
-    SarApprove,
-    SarReject,
-    SarFile,
-    Case,
-    CaseStatusUpdate,
+    BatchScreenRequest,
     CaseAssign,
-    RiskTierUpdate,
+    CaseStatusUpdate,
+    EscalationDecision,
     ModelValidationCreate,
-    PipelineResult,
+    OnboardingRequest,
+    RiskTierUpdate,
+    SanctionsMatchReview,
+    SarApprove,
+    SarFile,
+    SarReject,
+    TransactionCreate,
 )
-from src.agents.transaction_monitor import TransactionMonitorAgent
-from src.agents.kyc_verifier import KycVerifierAgent
-from src.agents.sanctions_screener import SanctionsScreenerAgent
-from src.agents.pattern_analyzer import PatternAnalyzerAgent
-from src.agents.sar_generator import SarGeneratorAgent
-from src.agents.case_manager import CaseManagerAgent
-from src.governance.engine import GovernanceEngine
-from src.governance.audit import log_human_decision
-
+from src.monitoring.continuous_monitor import ContinuousMonitor
+from src.monitoring.list_manager import ListManager
 
 # ---------------------------------------------------------------------------
 # Startup / lifespan
@@ -125,7 +125,7 @@ app.add_middleware(
 # Helper: run full 6-agent pipeline on a transaction
 # ---------------------------------------------------------------------------
 
-async def run_pipeline(txn: Dict[str, Any]) -> Dict[str, Any]:
+async def run_pipeline(txn: dict[str, Any]) -> dict[str, Any]:
     """Execute all 6 agents in sequence with governance checks between each stage.
 
     Pipeline order (mirrors CBN-recommended AML workflow):
@@ -208,7 +208,6 @@ async def run_pipeline(txn: Dict[str, Any]) -> Dict[str, Any]:
             # Merge counterparty matches into the primary result
             if cp_result.matches:
                 sanctions_result.matches.extend(cp_result.matches)
-                from src.models import SanctionsScreenResult
                 # Re-evaluate overall recommendation: block > review > clear (priority order)
                 actions = [m.action_taken for m in sanctions_result.matches]
                 if "block" in actions:
@@ -425,8 +424,8 @@ async def screen_batch(batch: BatchScreenRequest):
 
 @app.get("/transactions", tags=["Transactions"])
 async def get_transactions(
-    customer_id: Optional[str] = None,
-    status: Optional[str] = None,
+    customer_id: str | None = None,
+    status: str | None = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
@@ -539,15 +538,380 @@ async def update_risk_tier(customer_id: str, body: RiskTierUpdate):
 
 
 # ---------------------------------------------------------------------------
+# Onboarding (Agent 0 pre-screening before account activation)
+# ---------------------------------------------------------------------------
+
+@app.post("/customers/onboard", tags=["Onboarding"])
+async def onboard_customer(body: OnboardingRequest):
+    """Screen a new customer applicant before account creation.
+
+    Runs Agent 0 (OnboardingScreenerAgent) which checks the applicant against
+    OFAC SDN, UN Consolidated, Nigerian Domestic watchlist, and PEP database.
+    Decisions: approved (standard onboarding), pending_review (partial match,
+    enhanced monitoring), pending_escalation (PEP or adverse media, C-suite/MLRO
+    approval required), or blocked (confirmed sanctions match, CBN mandate).
+
+    A customer record is created for all non-blocked decisions. Blocked attempts
+    are logged to the audit trail without creating a customer record.
+    """
+    async with get_db() as db:
+        agent = OnboardingScreenerAgent(db)
+        gov = GovernanceEngine(db)
+        result = await agent.screen(body)
+
+        # Governance gate: routes blocked/pending_escalation/pending_review/approved
+        # to the correct compliance workflow per FATF R.12 and CBN requirements
+        gov_result = await gov.evaluate(
+            "onboarding_screener",
+            "customer_onboarding",
+            result.customer_id or "no_customer_created",
+            result.model_dump(),
+        )
+
+    return {
+        "result": result.model_dump(),
+        "governance": gov_result.model_dump(),
+    }
+
+
+@app.get("/customers/{customer_id}/onboarding-status", tags=["Onboarding"])
+async def get_onboarding_status(customer_id: str):
+    """Get onboarding status and any linked escalation for a customer."""
+    async with get_db() as db:
+        customer = await get_customer(db, customer_id)
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
+
+        # Fetch any pending escalation for this customer's onboarding
+        escalations = await list_escalations(
+            db, entity_id=customer_id, current_status=None, limit=10
+        )
+        onboarding_escalations = [
+            e for e in escalations if e.get("entity_type") == "customer_onboarding"
+        ]
+
+        audit = await get_audit_trail(
+            db, entity_type="customer", entity_id=customer_id, limit=30
+        )
+
+    return {
+        "customer_id": customer_id,
+        "onboarding_status": customer.get("onboarding_status", "unknown"),
+        "risk_tier": customer.get("risk_tier"),
+        "pep_status": customer.get("pep_status"),
+        "escalations": onboarding_escalations,
+        "audit_trail": audit,
+    }
+
+
+@app.post("/customers/{customer_id}/onboarding/approve", tags=["Onboarding"])
+async def approve_onboarding(customer_id: str, body: EscalationDecision):
+    """Approve a pending onboarding escalation (MLRO or C-suite decision).
+
+    Activates the customer account and sets onboarding_status='approved'.
+    For PEP customers, risk_tier is automatically set to 'very_high' per
+    FATF Recommendation 12 Enhanced Due Diligence requirement.
+    """
+    async with get_db() as db:
+        # Find the pending onboarding escalation for this customer
+        escalations = await list_escalations(
+            db, entity_id=customer_id, current_status="pending", limit=5
+        )
+        onboarding_esc = next(
+            (e for e in escalations if e.get("entity_type") == "customer_onboarding"),
+            None,
+        )
+        if not onboarding_esc:
+            raise HTTPException(
+                status_code=404,
+                detail="No pending onboarding escalation found for this customer",
+            )
+
+        workflow = EscalationWorkflow(db)
+        updated = await workflow.approve(
+            escalation_id=onboarding_esc["id"],
+            decided_by=body.decided_by,
+            rationale=body.rationale,
+        )
+
+    return {"escalation": updated, "decided_by": body.decided_by}
+
+
+@app.post("/customers/{customer_id}/onboarding/reject", tags=["Onboarding"])
+async def reject_onboarding(customer_id: str, body: EscalationDecision):
+    """Reject a pending onboarding escalation (MLRO or C-suite decision).
+
+    Sets onboarding_status='blocked' on the customer record. The customer
+    record is preserved for audit purposes but cannot transact.
+    """
+    async with get_db() as db:
+        escalations = await list_escalations(
+            db, entity_id=customer_id, current_status="pending", limit=5
+        )
+        onboarding_esc = next(
+            (e for e in escalations if e.get("entity_type") == "customer_onboarding"),
+            None,
+        )
+        if not onboarding_esc:
+            raise HTTPException(
+                status_code=404,
+                detail="No pending onboarding escalation found for this customer",
+            )
+
+        workflow = EscalationWorkflow(db)
+        updated = await workflow.reject(
+            escalation_id=onboarding_esc["id"],
+            decided_by=body.decided_by,
+            rationale=body.rationale,
+        )
+
+    return {"escalation": updated, "decided_by": body.decided_by}
+
+
+# ---------------------------------------------------------------------------
+# Escalations
+# ---------------------------------------------------------------------------
+
+@app.get("/escalations/pending", tags=["Escalations"])
+async def get_pending_escalations(
+    required_approver_role: str | None = None,
+    limit: int = Query(100, ge=1, le=500),
+):
+    """List pending escalations requiring human decision, with SLA breach indicators.
+
+    Optionally filter by required_approver_role so each compliance role sees
+    only the escalations they are authorised to decide (MLRO, compliance_officer,
+    senior_analyst). Overdue escalations (past SLA deadline) are annotated with
+    is_overdue=True and hours_remaining (negative if breached).
+    """
+    async with get_db() as db:
+        workflow = EscalationWorkflow(db)
+        escalations = await workflow.get_pending_escalations(
+            required_approver_role=required_approver_role, limit=limit
+        )
+    return {"escalations": escalations, "count": len(escalations)}
+
+
+@app.get("/escalations", tags=["Escalations"])
+async def get_escalations(
+    current_status: str | None = None,
+    entity_type: str | None = None,
+    required_approver_role: str | None = None,
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    """List all escalations with optional filters."""
+    async with get_db() as db:
+        escalations = await list_escalations(
+            db,
+            current_status=current_status,
+            entity_type=entity_type,
+            required_approver_role=required_approver_role,
+            limit=limit,
+            offset=offset,
+        )
+    return {"escalations": escalations, "count": len(escalations)}
+
+
+@app.get("/escalations/{escalation_id}", tags=["Escalations"])
+async def get_escalation_details(escalation_id: str):
+    """Escalation details with full audit evidence chain."""
+    async with get_db() as db:
+        escalation = await get_escalation(db, escalation_id)
+        if not escalation:
+            raise HTTPException(status_code=404, detail="Escalation not found")
+        # Fetch audit trail for both the escalation and its underlying entity
+        esc_audit = await get_audit_trail(
+            db, entity_type="escalation", entity_id=escalation_id, limit=20
+        )
+        entity_audit = await get_audit_trail(
+            db,
+            entity_type=escalation.get("entity_type", ""),
+            entity_id=escalation.get("entity_id", ""),
+            limit=20,
+        )
+    return {
+        "escalation": escalation,
+        "escalation_audit": esc_audit,
+        "entity_audit": entity_audit,
+    }
+
+
+@app.post("/escalations/{escalation_id}/approve", tags=["Escalations"])
+async def approve_escalation(escalation_id: str, body: EscalationDecision):
+    """Approve an escalation. Only valid for pending escalations.
+
+    Applies approval downstream to the underlying entity (e.g. activates
+    a pending customer onboarding). All decisions logged to audit trail
+    before the record is updated to satisfy CBN human-in-the-loop mandate.
+    """
+    async with get_db() as db:
+        workflow = EscalationWorkflow(db)
+        try:
+            updated = await workflow.approve(
+                escalation_id=escalation_id,
+                decided_by=body.decided_by,
+                rationale=body.rationale,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    return {"escalation": updated, "decided_by": body.decided_by}
+
+
+@app.post("/escalations/{escalation_id}/reject", tags=["Escalations"])
+async def reject_escalation(escalation_id: str, body: EscalationDecision):
+    """Reject an escalation. Only valid for pending escalations.
+
+    Applies rejection downstream to the underlying entity (e.g. blocks
+    a pending customer onboarding). Rationale is mandatory and immutably logged.
+    """
+    async with get_db() as db:
+        workflow = EscalationWorkflow(db)
+        try:
+            updated = await workflow.reject(
+                escalation_id=escalation_id,
+                decided_by=body.decided_by,
+                rationale=body.rationale,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    return {"escalation": updated, "decided_by": body.decided_by}
+
+
+# ---------------------------------------------------------------------------
+# Continuous Monitoring (Layer 3: periodic re-screening)
+# ---------------------------------------------------------------------------
+
+@app.post("/monitoring/run", tags=["Monitoring"])
+async def trigger_monitoring_run(run_type: str = "manual"):
+    """Trigger a full customer re-screening run against current watchlists.
+
+    Screens all customers against OFAC SDN, UN Consolidated, CBN/NFIU domestic
+    watchlist, and the internal PEP database. Detects new matches not present
+    at the customer's last screening, creates alerts for new hits, and upgrades
+    risk tiers where warranted. CBN recommends at minimum monthly re-screening.
+
+    run_type options: 'manual' (on-demand), 'scheduled' (automated cron trigger),
+    'list_update' (triggered when a new list version is available).
+    """
+    async with get_db() as db:
+        monitor = ContinuousMonitor(db)
+        result = await monitor.run(run_type=run_type)
+    return {"monitoring_run": result}
+
+
+@app.get("/monitoring/status", tags=["Monitoring"])
+async def get_monitoring_status():
+    """Monitoring status: last run summary, list freshness, and pending alerts."""
+    async with get_db() as db:
+        # Get the most recent monitoring run
+        runs = await list_monitoring_runs(db, limit=1)
+        last_run = runs[0] if runs else None
+
+        # Get all runs for counts
+        all_runs = await list_monitoring_runs(db, limit=100)
+        completed = [r for r in all_runs if r.get("status") == "completed"]
+        failed = [r for r in all_runs if r.get("status") == "failed"]
+
+        # Get current screening list status
+        list_manager = ListManager(db)
+        screening_lists = await list_manager.get_list_status()
+
+        # Get open monitoring alerts
+        monitoring_alerts = await list_alerts(
+            db, agent_source="continuous_monitor", status="open", limit=100
+        )
+
+    return {
+        "last_run": last_run,
+        "total_runs": len(all_runs),
+        "completed_runs": len(completed),
+        "failed_runs": len(failed),
+        "open_monitoring_alerts": len(monitoring_alerts),
+        "screening_lists": screening_lists,
+        "generated_at": now_wat(),
+    }
+
+
+@app.get("/monitoring/runs", tags=["Monitoring"])
+async def get_monitoring_runs(
+    status: str | None = None,
+    run_type: str | None = None,
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    """List monitoring run history."""
+    async with get_db() as db:
+        runs = await list_monitoring_runs(
+            db, status=status, run_type=run_type, limit=limit, offset=offset
+        )
+    return {"runs": runs, "count": len(runs)}
+
+
+@app.get("/monitoring/runs/{run_id}", tags=["Monitoring"])
+async def get_monitoring_run_details(run_id: str):
+    """Monitoring run details with linked alerts discovered during the run."""
+    async with get_db() as db:
+        run = await get_monitoring_run(db, run_id)
+        if not run:
+            raise HTTPException(status_code=404, detail="Monitoring run not found")
+        # Audit trail shows all customer screenings and alerts created by this run
+        audit = await get_audit_trail(
+            db, entity_type="monitoring_run", entity_id=run_id, limit=50
+        )
+    return {"run": run, "audit_trail": audit}
+
+
+# ---------------------------------------------------------------------------
+# Screening Lists
+# ---------------------------------------------------------------------------
+
+@app.get("/screening-lists", tags=["Screening Lists"])
+async def get_screening_lists():
+    """Current status of all screening lists: version, entry count, last updated.
+
+    Used by the monitoring dashboard to show list freshness and detect stale lists
+    that may indicate a failed update. CBN requires lists to be current within
+    24 hours of OFAC/UN publication.
+    """
+    async with get_db() as db:
+        list_manager = ListManager(db)
+        lists = await list_manager.get_list_status()
+    return {"screening_lists": lists, "count": len(lists)}
+
+
+@app.post("/screening-lists/update", tags=["Screening Lists"])
+async def update_screening_lists():
+    """Refresh all screening lists: check for new versions and update checksums.
+
+    In demo mode, recomputes checksums from SANCTIONS_DB. In production, this
+    would download list files from OFAC/UN source URLs, parse them, and store
+    the updated entries. Unchanged lists (same checksum) are skipped to avoid
+    unnecessary DB writes.
+    """
+    async with get_db() as db:
+        list_manager = ListManager(db)
+        results = await list_manager.refresh_all_lists()
+    updated = [r for r in results if r.get("status") == "updated"]
+    unchanged = [r for r in results if r.get("status") == "unchanged"]
+    return {
+        "results": results,
+        "updated_count": len(updated),
+        "unchanged_count": len(unchanged),
+        "refreshed_at": now_wat(),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Alerts
 # ---------------------------------------------------------------------------
 
 @app.get("/alerts", tags=["Alerts"])
 async def get_alerts(
-    status: Optional[str] = None,
-    severity: Optional[str] = None,
-    agent_source: Optional[str] = None,
-    customer_id: Optional[str] = None,
+    status: str | None = None,
+    severity: str | None = None,
+    agent_source: str | None = None,
+    customer_id: str | None = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
@@ -635,8 +999,8 @@ async def resolve_alert(alert_id: str, body: AlertResolve):
 @app.get("/sanctions/screen", tags=["Sanctions"])
 async def screen_sanctions(
     name: str = Query(..., description="Full name to screen"),
-    customer_id: Optional[str] = None,
-    transaction_id: Optional[str] = None,
+    customer_id: str | None = None,
+    transaction_id: str | None = None,
 ):
     """Screen a name/entity against all sanctions lists."""
     # Ad-hoc screening endpoint — useful for onboarding checks and manual investigations
@@ -652,15 +1016,21 @@ async def screen_sanctions(
 
 @app.get("/sanctions/matches", tags=["Sanctions"])
 async def get_sanctions_matches(
-    customer_id: Optional[str] = None,
-    action_taken: Optional[str] = None,
+    customer_id: str | None = None,
+    action_taken: str | None = None,
+    match_category: str | None = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
-    """List all sanctions matches."""
+    """List all sanctions matches. Filter by match_category: sanctions, pep, adverse_media."""
     async with get_db() as db:
         matches = await list_sanctions_matches(
-            db, customer_id=customer_id, action_taken=action_taken, limit=limit, offset=offset
+            db,
+            customer_id=customer_id,
+            action_taken=action_taken,
+            match_category=match_category,
+            limit=limit,
+            offset=offset,
         )
     return {"matches": matches, "count": len(matches)}
 
@@ -700,9 +1070,9 @@ async def review_sanctions_match(match_id: str, body: SanctionsMatchReview):
 
 @app.get("/sars", tags=["SARs"])
 async def get_sars(
-    status: Optional[str] = None,
-    priority: Optional[str] = None,
-    customer_id: Optional[str] = None,
+    status: str | None = None,
+    priority: str | None = None,
+    customer_id: str | None = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
@@ -847,10 +1217,10 @@ async def file_sar(sar_id: str, body: SarFile):
 
 @app.get("/cases", tags=["Cases"])
 async def get_cases(
-    status: Optional[str] = None,
-    priority: Optional[str] = None,
-    assigned_to: Optional[str] = None,
-    customer_id: Optional[str] = None,
+    status: str | None = None,
+    priority: str | None = None,
+    assigned_to: str | None = None,
+    customer_id: str | None = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
@@ -897,7 +1267,7 @@ async def update_case_status(case_id: str, body: CaseStatusUpdate):
                     detail="High-risk cases require a resolution statement before closing.",
                 )
 
-        updates: Dict[str, Any] = {"status": body.status}
+        updates: dict[str, Any] = {"status": body.status}
         if body.resolution:
             updates["resolution"] = body.resolution
         if body.status == "closed":
@@ -955,7 +1325,7 @@ async def governance_dashboard():
         # Summarise the audit trail by event type to show the distribution
         # of automated vs human decisions — useful for CBN model governance reporting
         audit = await get_audit_trail(db, limit=1000)
-        event_types: Dict[str, int] = {}
+        event_types: dict[str, int] = {}
         for entry in audit:
             et = entry.get("event_type", "unknown")
             event_types[et] = event_types.get(et, 0) + 1
@@ -990,7 +1360,7 @@ async def governance_dashboard():
 
 @app.get("/governance/audit-trail", tags=["Governance"])
 async def get_full_audit_trail(
-    entity_type: Optional[str] = None,
+    entity_type: str | None = None,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ):
@@ -1011,7 +1381,7 @@ async def get_entity_audit_trail(entity_id: str):
 
 
 @app.get("/governance/model-validation", tags=["Governance"])
-async def get_model_validations(model_name: Optional[str] = None, limit: int = Query(50, ge=1)):
+async def get_model_validations(model_name: str | None = None, limit: int = Query(50, ge=1)):
     """Model validation history (CBN annual requirement)."""
     # CBN BSD/DIR/PUB/LAB/019/002 requires annual independent validation of all AI/ML
     # models used in AML. This endpoint surfaces those records for examiner review.
@@ -1101,9 +1471,9 @@ async def str_summary():
     async with get_db() as db:
         all_sars = await list_sars(db, limit=1000)
 
-    by_status: Dict[str, int] = {}
-    by_typology: Dict[str, int] = {}
-    by_priority: Dict[str, int] = {}
+    by_status: dict[str, int] = {}
+    by_typology: dict[str, int] = {}
+    by_priority: dict[str, int] = {}
     filed_sars = []
 
     for s in all_sars:

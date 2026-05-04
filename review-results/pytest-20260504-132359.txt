@@ -1,0 +1,343 @@
+/Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.14.3, pytest-8.3.0, pluggy-1.6.0 -- /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/dewale001/.openclaw/workspace/AgenticAML
+configfile: pytest.ini
+plugins: asyncio-0.24.0, cov-5.0.0, langsmith-0.7.31, anyio-4.13.0
+asyncio: mode=Mode.AUTO, default_loop_scope=None
+collecting ... collected 174 items
+
+tests/test_agents.py::TestTransactionMonitorAgent::test_clear_transaction_below_threshold PASSED [  0%]
+tests/test_agents.py::TestTransactionMonitorAgent::test_cash_threshold_triggers PASSED [  1%]
+tests/test_agents.py::TestTransactionMonitorAgent::test_transfer_threshold_triggers PASSED [  1%]
+tests/test_agents.py::TestTransactionMonitorAgent::test_round_amount_detected PASSED [  2%]
+tests/test_agents.py::TestTransactionMonitorAgent::test_high_risk_geography PASSED [  2%]
+tests/test_agents.py::TestTransactionMonitorAgent::test_international_wire_above_1m PASSED [  3%]
+tests/test_agents.py::TestTransactionMonitorAgent::test_audit_trail_written PASSED [  4%]
+tests/test_agents.py::TestTransactionMonitorAgent::test_result_model_fields PASSED [  4%]
+tests/test_agents.py::TestKycVerifierAgent::test_full_kyc_verified PASSED [  5%]
+tests/test_agents.py::TestKycVerifierAgent::test_pep_detection PASSED    [  5%]
+tests/test_agents.py::TestKycVerifierAgent::test_senator_name_pep_keyword PASSED [  6%]
+tests/test_agents.py::TestKycVerifierAgent::test_incomplete_kyc PASSED   [  6%]
+tests/test_agents.py::TestKycVerifierAgent::test_unknown_customer_fails PASSED [  7%]
+tests/test_agents.py::TestKycVerifierAgent::test_risk_tier_assignment PASSED [  8%]
+tests/test_agents.py::TestKycVerifierAgent::test_high_risk_context_elevates_tier PASSED [  8%]
+tests/test_agents.py::TestKycVerifierAgent::test_audit_trail_written PASSED [  9%]
+tests/test_agents.py::TestKycVerifierAgent::test_result_model_fields PASSED [  9%]
+tests/test_agents.py::TestSanctionsScreenerAgent::test_clear_name_returns_clear PASSED [ 10%]
+tests/test_agents.py::TestSanctionsScreenerAgent::test_result_has_screened_at PASSED [ 10%]
+tests/test_agents.py::TestSanctionsScreenerAgent::test_exact_match_returns_block PASSED [ 11%]
+tests/test_agents.py::TestSanctionsScreenerAgent::test_match_score_in_valid_range PASSED [ 12%]
+tests/test_agents.py::TestSanctionsScreenerAgent::test_audit_trail_always_logged PASSED [ 12%]
+tests/test_agents.py::TestSanctionsScreenerAgent::test_result_model_fields PASSED [ 13%]
+tests/test_agents.py::TestPatternAnalyzerAgent::test_analyze_returns_result PASSED [ 13%]
+tests/test_agents.py::TestPatternAnalyzerAgent::test_structuring_pattern_detected PASSED [ 14%]
+tests/test_agents.py::TestPatternAnalyzerAgent::test_high_risk_triggers_escalation PASSED [ 14%]
+tests/test_agents.py::TestPatternAnalyzerAgent::test_pattern_confidence_valid_range PASSED [ 15%]
+tests/test_agents.py::TestPatternAnalyzerAgent::test_audit_trail_written PASSED [ 16%]
+tests/test_agents.py::TestPatternAnalyzerAgent::test_unknown_customer_returns_safe_result PASSED [ 16%]
+tests/test_agents.py::TestSarGeneratorAgent::test_generate_returns_draft_sar PASSED [ 17%]
+tests/test_agents.py::TestSarGeneratorAgent::test_sar_has_narrative PASSED [ 17%]
+tests/test_agents.py::TestSarGeneratorAgent::test_sar_has_typology PASSED [ 18%]
+tests/test_agents.py::TestSarGeneratorAgent::test_sar_priority_critical_for_sanctions PASSED [ 18%]
+tests/test_agents.py::TestSarGeneratorAgent::test_sar_never_auto_approved PASSED [ 19%]
+tests/test_agents.py::TestSarGeneratorAgent::test_audit_trail_written PASSED [ 20%]
+tests/test_agents.py::TestSarGeneratorAgent::test_result_model_fields PASSED [ 20%]
+tests/test_agents.py::TestCaseManagerAgent::test_create_and_assign_returns_result PASSED [ 21%]
+tests/test_agents.py::TestCaseManagerAgent::test_case_priority_set_correctly PASSED [ 21%]
+tests/test_agents.py::TestCaseManagerAgent::test_case_has_sla_deadline PASSED [ 22%]
+tests/test_agents.py::TestCaseManagerAgent::test_sanctions_case_escalates_to_officer PASSED [ 22%]
+tests/test_agents.py::TestCaseManagerAgent::test_audit_trail_written PASSED [ 23%]
+tests/test_agents.py::TestCaseManagerAgent::test_result_model_fields PASSED [ 24%]
+tests/test_api.py::TestHealthEndpoint::test_health_returns_200 PASSED    [ 24%]
+tests/test_api.py::TestHealthEndpoint::test_health_response_structure PASSED [ 25%]
+tests/test_api.py::TestHealthEndpoint::test_health_has_version PASSED    [ 25%]
+tests/test_api.py::TestCustomerEndpoints::test_list_customers_200 PASSED [ 26%]
+tests/test_api.py::TestCustomerEndpoints::test_list_customers_returns_seeded_customer PASSED [ 27%]
+tests/test_api.py::TestCustomerEndpoints::test_get_customer_by_id PASSED [ 27%]
+tests/test_api.py::TestCustomerEndpoints::test_get_nonexistent_customer_404 PASSED [ 28%]
+tests/test_api.py::TestCustomerEndpoints::test_trigger_kyc_verification PASSED [ 28%]
+tests/test_api.py::TestCustomerEndpoints::test_update_risk_tier_requires_approval PASSED [ 29%]
+tests/test_api.py::TestCustomerEndpoints::test_update_risk_tier_invalid_customer_404 PASSED [ 29%]
+tests/test_api.py::TestCustomerEndpoints::test_list_customers_limit_param PASSED [ 30%]
+tests/test_api.py::TestTransactionEndpoints::test_list_transactions_200 PASSED [ 31%]
+tests/test_api.py::TestTransactionEndpoints::test_get_transaction_by_id PASSED [ 31%]
+tests/test_api.py::TestTransactionEndpoints::test_get_nonexistent_transaction_404 PASSED [ 32%]
+tests/test_api.py::TestTransactionEndpoints::test_screen_single_transaction PASSED [ 32%]
+tests/test_api.py::TestTransactionEndpoints::test_screen_transaction_returns_monitor_result PASSED [ 33%]
+tests/test_api.py::TestTransactionEndpoints::test_screen_transaction_with_high_risk_amount PASSED [ 33%]
+tests/test_api.py::TestTransactionEndpoints::test_batch_screen_transactions PASSED [ 34%]
+tests/test_api.py::TestTransactionEndpoints::test_screen_transaction_invalid_amount_422 PASSED [ 35%]
+tests/test_api.py::TestAlertEndpoints::test_list_alerts_200 PASSED       [ 35%]
+tests/test_api.py::TestAlertEndpoints::test_list_alerts_includes_seeded_alert PASSED [ 36%]
+tests/test_api.py::TestAlertEndpoints::test_get_alert_by_id PASSED       [ 36%]
+tests/test_api.py::TestAlertEndpoints::test_get_nonexistent_alert_404 PASSED [ 37%]
+tests/test_api.py::TestAlertEndpoints::test_filter_alerts_by_status PASSED [ 37%]
+tests/test_api.py::TestAlertEndpoints::test_filter_alerts_by_severity PASSED [ 38%]
+tests/test_api.py::TestAlertEndpoints::test_assign_alert_to_analyst PASSED [ 39%]
+tests/test_api.py::TestAlertEndpoints::test_resolve_alert_with_rationale PASSED [ 39%]
+tests/test_api.py::TestSanctionsEndpoints::test_screen_name_against_lists PASSED [ 40%]
+tests/test_api.py::TestSanctionsEndpoints::test_screen_name_missing_param_422 PASSED [ 40%]
+tests/test_api.py::TestSanctionsEndpoints::test_list_sanctions_matches_200 PASSED [ 41%]
+tests/test_api.py::TestSanctionsEndpoints::test_screen_known_sanctioned_name PASSED [ 41%]
+tests/test_api.py::TestSarEndpoints::test_list_sars_200 PASSED           [ 42%]
+tests/test_api.py::TestSarEndpoints::test_list_sars_includes_seeded_sar PASSED [ 43%]
+tests/test_api.py::TestSarEndpoints::test_get_sar_by_id PASSED           [ 43%]
+tests/test_api.py::TestSarEndpoints::test_get_nonexistent_sar_404 PASSED [ 44%]
+tests/test_api.py::TestSarEndpoints::test_approve_sar_requires_human_decision PASSED [ 44%]
+tests/test_api.py::TestSarEndpoints::test_reject_sar_with_rationale PASSED [ 45%]
+tests/test_api.py::TestSarEndpoints::test_file_sar_post_approval PASSED  [ 45%]
+tests/test_api.py::TestSarEndpoints::test_filter_sars_by_status PASSED   [ 46%]
+tests/test_api.py::TestCaseEndpoints::test_list_cases_200 PASSED         [ 47%]
+tests/test_api.py::TestCaseEndpoints::test_list_cases_includes_seeded_case PASSED [ 47%]
+tests/test_api.py::TestCaseEndpoints::test_get_case_by_id PASSED         [ 48%]
+tests/test_api.py::TestCaseEndpoints::test_get_nonexistent_case_404 PASSED [ 48%]
+tests/test_api.py::TestCaseEndpoints::test_update_case_status PASSED     [ 49%]
+tests/test_api.py::TestCaseEndpoints::test_assign_case PASSED            [ 50%]
+tests/test_api.py::TestCaseEndpoints::test_close_case_with_resolution PASSED [ 50%]
+tests/test_api.py::TestGovernanceEndpoints::test_governance_dashboard_200 PASSED [ 51%]
+tests/test_api.py::TestGovernanceEndpoints::test_audit_trail_endpoint_200 PASSED [ 51%]
+tests/test_api.py::TestGovernanceEndpoints::test_audit_trail_entity_filter PASSED [ 52%]
+tests/test_api.py::TestGovernanceEndpoints::test_model_validation_list_200 PASSED [ 52%]
+tests/test_api.py::TestGovernanceEndpoints::test_record_model_validation PASSED [ 53%]
+tests/test_api.py::TestGovernanceEndpoints::test_model_validation_recorded_appears_in_list PASSED [ 54%]
+tests/test_api.py::TestReportingEndpoints::test_daily_report_200 PASSED  [ 54%]
+tests/test_api.py::TestReportingEndpoints::test_weekly_report_200 PASSED [ 55%]
+tests/test_api.py::TestReportingEndpoints::test_str_summary_200 PASSED   [ 55%]
+tests/test_api.py::TestReportingEndpoints::test_alert_analytics_200 PASSED [ 56%]
+tests/test_api.py::TestApiIntegrationEndpoints::test_api_stats_200 PASSED [ 56%]
+tests/test_api.py::TestApiIntegrationEndpoints::test_api_alerts_summary_200 PASSED [ 57%]
+tests/test_api.py::TestEndToEndPipeline::test_full_pipeline_low_risk_transaction PASSED [ 58%]
+tests/test_api.py::TestEndToEndPipeline::test_full_pipeline_high_risk_transaction PASSED [ 58%]
+tests/test_api.py::TestEndToEndPipeline::test_pipeline_result_governance_decisions_present PASSED [ 59%]
+tests/test_api.py::TestEndToEndPipeline::test_pipeline_processing_time_recorded PASSED [ 59%]
+tests/test_database.py::TestCustomerCRUD::test_create_customer PASSED    [ 60%]
+tests/test_database.py::TestCustomerCRUD::test_get_customer PASSED       [ 60%]
+tests/test_database.py::TestCustomerCRUD::test_get_nonexistent_customer PASSED [ 61%]
+tests/test_database.py::TestCustomerCRUD::test_update_customer PASSED    [ 62%]
+tests/test_database.py::TestCustomerCRUD::test_list_customers PASSED     [ 62%]
+tests/test_database.py::TestTransactionCRUD::test_create_transaction PASSED [ 63%]
+tests/test_database.py::TestTransactionCRUD::test_get_transaction PASSED [ 63%]
+tests/test_database.py::TestTransactionCRUD::test_list_transactions_by_customer PASSED [ 64%]
+tests/test_database.py::TestAlertCRUD::test_create_alert PASSED          [ 64%]
+tests/test_database.py::TestAlertCRUD::test_get_alert PASSED             [ 65%]
+tests/test_database.py::TestAlertCRUD::test_update_alert_status PASSED   [ 66%]
+tests/test_database.py::TestAlertCRUD::test_list_alerts_with_filters PASSED [ 66%]
+tests/test_database.py::TestSarCRUD::test_create_sar PASSED              [ 67%]
+tests/test_database.py::TestSarCRUD::test_sar_approval_workflow PASSED   [ 67%]
+tests/test_database.py::TestSarCRUD::test_list_sars_by_status PASSED     [ 68%]
+tests/test_database.py::TestCaseCRUD::test_create_case PASSED            [ 68%]
+tests/test_database.py::TestCaseCRUD::test_update_case_status PASSED     [ 69%]
+tests/test_database.py::TestAuditTrail::test_log_audit PASSED            [ 70%]
+tests/test_database.py::TestAuditTrail::test_get_audit_trail PASSED      [ 70%]
+tests/test_database.py::TestAuditTrail::test_audit_trail_immutability PASSED [ 71%]
+tests/test_database.py::TestDashboardStats::test_get_dashboard_stats PASSED [ 71%]
+tests/test_governance.py::TestGovernanceRules::test_rules_singleton_exists PASSED [ 72%]
+tests/test_governance.py::TestGovernanceRules::test_threshold_config_defaults PASSED [ 72%]
+tests/test_governance.py::TestGovernanceRules::test_risk_tier_config PASSED [ 73%]
+tests/test_governance.py::TestGovernanceRules::test_sla_config PASSED    [ 74%]
+tests/test_governance.py::TestGovernanceRules::test_sar_approver_roles PASSED [ 74%]
+tests/test_governance.py::TestGovernanceRules::test_sanctions_block_confirmer_roles PASSED [ 75%]
+tests/test_governance.py::TestGovernanceRules::test_mandatory_sar_risk_levels PASSED [ 75%]
+tests/test_governance.py::TestGovernanceRules::test_sanctions_human_review_types PASSED [ 76%]
+tests/test_governance.py::TestRiskTierHelper::test_low_amount PASSED     [ 77%]
+tests/test_governance.py::TestRiskTierHelper::test_medium_amount PASSED  [ 77%]
+tests/test_governance.py::TestRiskTierHelper::test_high_amount PASSED    [ 78%]
+tests/test_governance.py::TestRiskTierHelper::test_critical_amount PASSED [ 78%]
+tests/test_governance.py::TestSlaHelper::test_sla_critical PASSED        [ 79%]
+tests/test_governance.py::TestSlaHelper::test_sla_high PASSED            [ 79%]
+tests/test_governance.py::TestSlaHelper::test_sla_medium PASSED          [ 80%]
+tests/test_governance.py::TestSlaHelper::test_sla_low PASSED             [ 81%]
+tests/test_governance.py::TestSlaHelper::test_sla_unknown_defaults_to_medium PASSED [ 81%]
+tests/test_governance.py::TestGovernanceEngineConfidenceGate::test_high_confidence_passes PASSED [ 82%]
+tests/test_governance.py::TestGovernanceEngineConfidenceGate::test_low_confidence_fails_and_escalates PASSED [ 82%]
+tests/test_governance.py::TestGovernanceEngineConfidenceGate::test_boundary_confidence_exact_threshold_passes PASSED [ 83%]
+tests/test_governance.py::TestGovernanceEngineMaterialityGate::test_below_materiality_threshold_passes PASSED [ 83%]
+tests/test_governance.py::TestGovernanceEngineMaterialityGate::test_above_materiality_threshold_requires_review PASSED [ 84%]
+tests/test_governance.py::TestGovernanceEngineMaterialityGate::test_materiality_gate_not_applied_outside_relevant_stages PASSED [ 85%]
+tests/test_governance.py::TestGovernanceEngineSanctionsBlock::test_clear_recommendation_passes PASSED [ 85%]
+tests/test_governance.py::TestGovernanceEngineSanctionsBlock::test_block_recommendation_auto_blocks PASSED [ 86%]
+tests/test_governance.py::TestGovernanceEngineSanctionsBlock::test_review_recommendation_requires_human PASSED [ 86%]
+tests/test_governance.py::TestGovernanceEngineHumanInTheLoop::test_sar_always_requires_human_approval PASSED [ 87%]
+tests/test_governance.py::TestGovernanceEngineEscalationChain::test_critical_risk_escalates PASSED [ 87%]
+tests/test_governance.py::TestGovernanceEngineEscalationChain::test_high_risk_requires_senior_review PASSED [ 88%]
+tests/test_governance.py::TestGovernanceEngineEscalationChain::test_low_risk_no_escalation PASSED [ 89%]
+tests/test_governance.py::TestGovernanceEngineKycEscalation::test_failed_kyc_escalates PASSED [ 89%]
+tests/test_governance.py::TestGovernanceEngineKycEscalation::test_incomplete_kyc_flagged_for_review PASSED [ 90%]
+tests/test_governance.py::TestGovernanceEngineKycEscalation::test_verified_kyc_no_escalation PASSED [ 90%]
+tests/test_governance.py::TestGovernanceEngineResultModel::test_all_passed_when_no_issues PASSED [ 91%]
+tests/test_governance.py::TestGovernanceEngineResultModel::test_result_has_decisions_list PASSED [ 91%]
+tests/test_governance.py::TestGovernanceEngineResultModel::test_each_decision_has_required_fields PASSED [ 92%]
+tests/test_governance.py::TestGovernanceEngineResultModel::test_governance_decisions_logged_to_audit_trail PASSED [ 93%]
+tests/test_governance.py::TestAuditTrailHelpers::test_log_agent_decision PASSED [ 93%]
+tests/test_governance.py::TestAuditTrailHelpers::test_log_governance_decision PASSED [ 94%]
+tests/test_governance.py::TestAuditTrailHelpers::test_log_human_decision PASSED [ 94%]
+tests/test_governance.py::TestAuditTrailHelpers::test_log_sanctions_screening PASSED [ 95%]
+tests/test_governance.py::TestAuditTrailHelpers::test_log_sar_lifecycle PASSED [ 95%]
+tests/test_governance.py::TestAuditTrailHelpers::test_log_case_lifecycle PASSED [ 96%]
+tests/test_governance.py::TestAuditTrailHelpers::test_audit_trail_is_append_only PASSED [ 97%]
+tests/test_governance.py::TestAuditTrailHelpers::test_audit_entries_have_timestamps PASSED [ 97%]
+tests/test_governance.py::TestAuditTrailHelpers::test_audit_entries_have_actor PASSED [ 98%]
+tests/test_governance.py::TestGovernancePipelineIntegration::test_multiple_stages_accumulate_decisions PASSED [ 98%]
+tests/test_governance.py::TestGovernancePipelineIntegration::test_sanctions_block_produces_blocked_result PASSED [ 99%]
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire PASSED [100%]
+
+=============================== warnings summary ===============================
+src/models.py:71
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:71: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class Customer(CustomerBase):
+
+src/models.py:141
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:141: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class Transaction(TransactionBase):
+
+src/models.py:187
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:187: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class Alert(AlertBase):
+
+src/models.py:302
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:302: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class Sar(SarBase):
+
+src/models.py:368
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:368: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class Case(CaseBase):
+
+src/models.py:622
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:622: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ModelValidation(ModelValidationCreate):
+
+src/models.py:786
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:786: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class Escalation(BaseModel):
+
+src/models.py:834
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:834: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MonitoringRun(BaseModel):
+
+src/models.py:867
+  /Users/dewale001/.openclaw/workspace/AgenticAML/src/models.py:867: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ScreeningList(BaseModel):
+
+.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:179: 9674 warnings
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:179: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(obj) or inspect.isasyncgenfunction(obj)
+
+.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:450: 174 warnings
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:450: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(func)
+
+.venv/lib/python3.14/site-packages/starlette/formparsers.py:12
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+.venv/lib/python3.14/site-packages/starlette/_utils.py:40: 55 warnings
+tests/test_api.py: 10 warnings
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/starlette/_utils.py:40: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(obj) or (callable(obj) and asyncio.iscoroutinefunction(obj.__call__))
+
+.venv/lib/python3.14/site-packages/fastapi/routing.py:233: 51 warnings
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/fastapi/routing.py:233: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    is_coroutine = asyncio.iscoroutinefunction(dependant.call)
+
+tests/test_agents.py::TestTransactionMonitorAgent::test_clear_transaction_below_threshold
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:1056: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    return asyncio.get_event_loop_policy()
+
+tests/test_agents.py::TestTransactionMonitorAgent::test_clear_transaction_below_threshold
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:685: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    old_loop_policy = asyncio.get_event_loop_policy()
+
+tests/test_agents.py::TestTransactionMonitorAgent::test_clear_transaction_below_threshold
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:690: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(policy)
+
+tests/test_agents.py::TestTransactionMonitorAgent::test_clear_transaction_below_threshold
+tests/test_database.py::TestCustomerCRUD::test_create_customer
+tests/test_governance.py::TestGovernanceEngineConfidenceGate::test_high_confidence_passes
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:773: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    _restore_event_loop_policy(asyncio.get_event_loop_policy()),
+
+tests/test_agents.py::TestTransactionMonitorAgent::test_clear_transaction_below_threshold
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:783: DeprecationWarning: The event_loop fixture provided by pytest-asyncio has been redefined in
+  /Users/dewale001/.openclaw/workspace/AgenticAML/tests/test_agents.py:38
+  Replacing the event_loop fixture with a custom implementation is deprecated
+  and will lead to errors in the future.
+  If you want to request an asyncio event loop with a scope other than function
+  scope, use the "scope" argument to the asyncio mark when marking the tests.
+  If you want to return different types of event loops, use the event_loop_policy
+  fixture.
+  
+    warnings.warn(
+
+tests/test_agents.py::TestTransactionMonitorAgent::test_clear_transaction_below_threshold
+tests/test_database.py::TestCustomerCRUD::test_create_customer
+tests/test_governance.py::TestGovernanceEngineConfidenceGate::test_high_confidence_passes
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:788: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_database.py::TestCustomerCRUD::test_create_customer
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:783: DeprecationWarning: The event_loop fixture provided by pytest-asyncio has been redefined in
+  /Users/dewale001/.openclaw/workspace/AgenticAML/tests/test_database.py:42
+  Replacing the event_loop fixture with a custom implementation is deprecated
+  and will lead to errors in the future.
+  If you want to request an asyncio event loop with a scope other than function
+  scope, use the "scope" argument to the asyncio mark when marking the tests.
+  If you want to return different types of event loops, use the event_loop_policy
+  fixture.
+  
+    warnings.warn(
+
+tests/test_governance.py::TestGovernanceEngineConfidenceGate::test_high_confidence_passes
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:783: DeprecationWarning: The event_loop fixture provided by pytest-asyncio has been redefined in
+  /Users/dewale001/.openclaw/workspace/AgenticAML/tests/test_governance.py:56
+  Replacing the event_loop fixture with a custom implementation is deprecated
+  and will lead to errors in the future.
+  If you want to request an asyncio event loop with a scope other than function
+  scope, use the "scope" argument to the asyncio mark when marking the tests.
+  If you want to return different types of event loops, use the event_loop_policy
+  fixture.
+  
+    warnings.warn(
+
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:833: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:857: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(previous_policy)
+
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:869: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:840: DeprecationWarning: pytest-asyncio detected an unclosed event loop when tearing down the event_loop
+  fixture: <_UnixSelectorEventLoop running=False closed=False debug=True>
+  pytest-asyncio will close the event loop for you, but future versions of the
+  library will no longer do so. In order to ensure compatibility with future
+  versions, please make sure that:
+      1. Any custom "event_loop" fixture properly closes the loop after yielding it
+      2. The scopes of your custom "event_loop" fixtures do not overlap
+      3. Your code does not modify the event loop in async fixtures or tests
+  
+    warnings.warn(
+
+tests/test_governance.py::TestGovernancePipelineIntegration::test_low_confidence_plus_high_materiality_both_fire
+  /Users/dewale001/.openclaw/workspace/AgenticAML/.venv/lib/python3.14/site-packages/pytest_asyncio/plugin.py:694: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(old_loop_policy)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+====================== 174 passed, 9998 warnings in 1.16s ======================

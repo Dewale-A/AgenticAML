@@ -13,7 +13,6 @@ Default values align with CBN AML/CFT guidelines and the Money Laundering
 
 import os
 from dataclasses import dataclass, field
-from typing import List
 
 
 @dataclass
@@ -68,6 +67,44 @@ class ThresholdConfig:
     # Automatically block transactions on confirmed sanctions matches.
     # CBN mandates immediate freezing without delay for OFAC/UN list hits.
     auto_block_sanctions: bool = os.getenv("AUTO_BLOCK_SANCTIONS", "true").lower() == "true"
+
+    # --- Enhanced transaction monitoring parameters (ROADMAP Phase 1) ---
+
+    # CBN AML/CFT Guidelines Section 4: accounts with no activity for 6 months
+    # (180 days) are classified as dormant and subject to special scrutiny on reactivation.
+    dormant_threshold_days: int = int(os.getenv("DORMANT_THRESHOLD_DAYS", "180"))
+
+    # Severity level assigned to dormant reactivation alerts. Default 'high'
+    # because sudden activity on a long-dormant account is a known money mule indicator.
+    dormant_reactivation_severity: str = os.getenv("DORMANT_REACTIVATION_SEVERITY", "high")
+
+    # CBN Risk Assessment Section: new accounts transacting heavily in their first
+    # 30 days warrant enhanced scrutiny (classic placement risk indicator).
+    new_account_window_days: int = int(os.getenv("NEW_ACCOUNT_WINDOW_DAYS", "30"))
+
+    # Transaction count ceiling for new accounts within new_account_window_days.
+    new_account_txn_threshold: int = int(os.getenv("NEW_ACCOUNT_TXN_THRESHOLD", "10"))
+
+    # NGN 5M volume ceiling for new accounts within new_account_window_days.
+    new_account_amount_threshold: float = float(os.getenv("NEW_ACCOUNT_AMOUNT_THRESHOLD", "5000000"))
+
+    # Velocity burst multiplier: flag if 24h transaction count exceeds this multiple
+    # of the customer's 90-day average daily rate. 3x is statistically anomalous
+    # for legitimate accounts and aligns with CBN Risk Assessment Section guidance.
+    velocity_burst_multiplier: float = float(os.getenv("VELOCITY_BURST_MULTIPLIER", "3.0"))
+
+    # FATF Recommendation 16: flag accounts where cross-border transactions to high-risk
+    # jurisdictions exceed this fraction of monthly transaction volume (30%).
+    cross_border_concentration_pct: float = float(os.getenv("CROSS_BORDER_CONCENTRATION_PCT", "0.30"))
+
+    # Window for round-tripping detection: funds that leave and return to the same
+    # account via intermediaries within this many days are flagged as potential
+    # layering. 30 days covers common invoice-fraud and trade-based ML cycles.
+    round_trip_window_days: int = int(os.getenv("ROUND_TRIP_WINDOW_DAYS", "30"))
+
+    # SLA for executive escalations in hours. Default 24h aligns with NFIU STR
+    # filing deadline (Money Laundering Prevention and Prohibition Act 2022, Section 6).
+    escalation_sla_hours: int = int(os.getenv("ESCALATION_SLA_HOURS", "24"))
 
 
 @dataclass
@@ -129,7 +166,7 @@ class GovernanceRules:
     # Sanctions match types that REQUIRE human review before action is taken.
     # 'strong' and 'partial' matches have enough uncertainty that a human
     # should confirm before a block is executed, to avoid false positives.
-    sanctions_human_review_types: List[str] = field(
+    sanctions_human_review_types: list[str] = field(
         default_factory=lambda: ["strong", "partial"]
     )
 
@@ -141,27 +178,27 @@ class GovernanceRules:
     # Risk levels that MUST trigger SAR assessment.
     # 'critical' is the only automatic trigger; 'high' prompts analyst review
     # who may then initiate a SAR. Only 'critical' is mandatory.
-    mandatory_sar_risk_levels: List[str] = field(
+    mandatory_sar_risk_levels: list[str] = field(
         default_factory=lambda: ["critical"]
     )
 
     # Roles permitted to approve SARs for NFIU filing.
     # Only senior compliance roles can approve SARs — this prevents junior
     # analysts from filing without oversight (CBN MLRO requirement).
-    sar_approver_roles: List[str] = field(
+    sar_approver_roles: list[str] = field(
         default_factory=lambda: ["compliance_officer", "senior_compliance_officer", "mlro"]
     )
 
     # Roles permitted to confirm a sanctions block.
     # Sanctions blocks have major customer impact; senior officer confirmation
     # ensures accuracy before an account is frozen.
-    sanctions_block_confirmer_roles: List[str] = field(
+    sanctions_block_confirmer_roles: list[str] = field(
         default_factory=lambda: ["senior_compliance_officer", "mlro"]
     )
 
     # Roles permitted to close a high-risk case.
     # Prevents premature case closure by junior staff on sensitive investigations.
-    high_risk_case_close_roles: List[str] = field(
+    high_risk_case_close_roles: list[str] = field(
         default_factory=lambda: ["senior_compliance_officer", "mlro", "compliance_officer"]
     )
 

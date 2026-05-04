@@ -1,0 +1,176 @@
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.14.3
+Run started:2026-05-04 19:24:00.427273+00:00
+
+Test results:
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:477:10
+476	    async with db.execute(
+477	        f"SELECT * FROM audit_trail {where} ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+478	        params,
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:565:23
+564	    values = list(updates.values()) + [customer_id]
+565	    await db.execute(f"UPDATE customers SET {set_clause} WHERE id = ?", values)
+566	    await db.commit()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:640:10
+639	    async with db.execute(
+640	        f"SELECT * FROM transactions {where} ORDER BY timestamp DESC LIMIT ? OFFSET ?", params
+641	    ) as cur:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:759:10
+758	    async with db.execute(
+759	        f"SELECT * FROM alerts {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+760	    ) as cur:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:769:23
+768	    values = list(updates.values()) + [alert_id]
+769	    await db.execute(f"UPDATE alerts SET {set_clause} WHERE id = ?", values)
+770	    await db.commit()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:850:10
+849	    async with db.execute(
+850	        f"SELECT * FROM sanctions_matches {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+851	    ) as cur:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:860:23
+859	    values = list(updates.values()) + [match_id]
+860	    await db.execute(f"UPDATE sanctions_matches SET {set_clause} WHERE id = ?", values)
+861	    await db.commit()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:936:10
+935	    async with db.execute(
+936	        f"SELECT * FROM sars {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+937	    ) as cur:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:951:23
+950	    values = list(updates.values()) + [sar_id]
+951	    await db.execute(f"UPDATE sars SET {set_clause} WHERE id = ?", values)
+952	    await db.commit()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:1031:10
+1030	    async with db.execute(
+1031	        f"SELECT * FROM cases {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+1032	    ) as cur:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:1046:23
+1045	    values = list(updates.values()) + [case_id]
+1046	    await db.execute(f"UPDATE cases SET {set_clause} WHERE id = ?", values)
+1047	    await db.commit()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:1203:10
+1202	    async with db.execute(
+1203	        f"SELECT * FROM escalations {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params
+1204	    ) as cur:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:1217:23
+1216	    values = list(updates.values()) + [escalation_id]
+1217	    await db.execute(f"UPDATE escalations SET {set_clause} WHERE id = ?", values)
+1218	    await db.commit()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:1287:10
+1286	    async with db.execute(
+1287	        f"SELECT * FROM monitoring_runs {where} ORDER BY started_at DESC LIMIT ? OFFSET ?", params
+1288	    ) as cur:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: /Users/dewale001/.openclaw/workspace/AgenticAML/src/database.py:1297:23
+1296	    values = list(updates.values()) + [run_id]
+1297	    await db.execute(f"UPDATE monitoring_runs SET {set_clause} WHERE id = ?", values)
+1298	    await db.commit()
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 8831
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 40
+		Medium: 15
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 15
+		High: 40
+Files skipped (0):

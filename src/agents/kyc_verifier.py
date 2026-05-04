@@ -6,7 +6,7 @@ In production this agent would call NIBSS (for BVN verification) and
 NIMC (for NIN verification) APIs. In this demo, format-based validation
 is used as a proxy.
 
-CBN's tiered KYC framework (Tiers 1–3) specifies which identity documents
+CBN's tiered KYC framework (Tiers 1-3) specifies which identity documents
 are required at each account tier. This agent enforces Tier-3 requirements
 (the strictest tier): BVN + NIN + proof of address are all mandatory for
 individual accounts above the basic transaction limit.
@@ -23,11 +23,11 @@ prevents accidental or fraudulent risk understatement.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import aiosqlite
 
-from src.database import get_customer, update_customer, now_wat
+from src.database import get_customer, update_customer
 from src.governance.audit import log_agent_decision
 from src.models import KycVerifierResult
 
@@ -59,7 +59,7 @@ class KycVerifierAgent:
     async def verify(
         self,
         customer_id: str,
-        monitor_context: Optional[Dict[str, Any]] = None,
+        monitor_context: dict[str, Any] | None = None,
     ) -> KycVerifierResult:
         """Verify KYC completeness and assign risk tier for a customer.
 
@@ -155,7 +155,7 @@ class KycVerifierAgent:
 
         # Step 6: Update customer record with latest KYC assessment.
         # pep_status is only updated upward — once flagged as PEP, it stays PEP.
-        updates: Dict[str, Any] = {
+        updates: dict[str, Any] = {
             "kyc_status": kyc_status,
             "risk_tier": risk_tier,
             "pep_status": 1 if pep_detected else customer.get("pep_status", 0),
@@ -195,7 +195,7 @@ class KycVerifierAgent:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _validate_bvn(self, bvn: Optional[str]) -> bool:
+    def _validate_bvn(self, bvn: str | None) -> bool:
         """Validate BVN format: exactly 11 digits per CBN standard.
 
         The BVN (Bank Verification Number) is a 11-digit biometric identifier
@@ -206,7 +206,7 @@ class KycVerifierAgent:
             return False
         return bool(re.match(r"^\d{11}$", bvn.strip()))
 
-    def _validate_nin(self, nin: Optional[str]) -> bool:
+    def _validate_nin(self, nin: str | None) -> bool:
         """Validate NIN format: exactly 11 digits per NIMC standard.
 
         The NIN (National Identification Number) is an 11-digit national
@@ -234,12 +234,12 @@ class KycVerifierAgent:
 
     def _assign_risk_tier(
         self,
-        customer: Dict,
+        customer: dict,
         pep_detected: bool,
-        missing_fields: List[str],
+        missing_fields: list[str],
         bvn_valid: bool,
         nin_valid: bool,
-        monitor_context: Optional[Dict],
+        monitor_context: dict | None,
     ) -> str:
         """Assign a risk tier using a weighted point scoring model.
 
@@ -253,7 +253,7 @@ class KycVerifierAgent:
         - Invalid BVN: +15 (document exists but cannot be verified)
         - Invalid NIN: +10 (for individual accounts only)
         - High transaction risk score (≥0.7): +25 (context from monitor agent)
-        - Moderate transaction risk (0.4–0.7): +10
+        - Moderate transaction risk (0.4-0.7): +10
 
         The 'never auto-downgrade' rule (score = max(score, existing_score))
         reflects CBN guidance that risk tier reductions require explicit human

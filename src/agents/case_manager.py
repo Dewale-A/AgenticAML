@@ -27,20 +27,17 @@ agent implements that requirement systematically.
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import aiosqlite
 
 from src.database import (
     create_case,
-    get_alert,
-    get_customer,
+    get_dashboard_stats,
     list_alerts,
-    list_cases,
     list_sars,
     list_transactions,
-    get_dashboard_stats,
     now_wat,
 )
 from src.governance.audit import log_agent_decision, log_case_lifecycle
@@ -70,12 +67,12 @@ class CaseManagerAgent:
     async def create_and_assign(
         self,
         customer_id: str,
-        alert_id: Optional[str] = None,
-        pattern_result: Optional[Dict] = None,
-        monitor_result: Optional[Dict] = None,
-        kyc_result: Optional[Dict] = None,
-        sanctions_result: Optional[Dict] = None,
-        sar_result: Optional[Dict] = None,
+        alert_id: str | None = None,
+        pattern_result: dict | None = None,
+        monitor_result: dict | None = None,
+        kyc_result: dict | None = None,
+        sanctions_result: dict | None = None,
+        sar_result: dict | None = None,
     ) -> CaseManagerResult:
         """Create an investigation case and assign it to the appropriate analyst.
 
@@ -170,7 +167,7 @@ class CaseManagerAgent:
             audit_logged=True,
         )
 
-    async def generate_daily_report(self) -> Dict[str, Any]:
+    async def generate_daily_report(self) -> dict[str, Any]:
         """Generate a daily compliance summary report.
 
         Called by the /reports/daily API endpoint. Provides the Compliance
@@ -238,7 +235,7 @@ class CaseManagerAgent:
 
         return report
 
-    async def generate_alert_analytics(self) -> Dict[str, Any]:
+    async def generate_alert_analytics(self) -> dict[str, Any]:
         """Generate alert analytics for the compliance dashboard.
 
         Key metrics computed:
@@ -257,11 +254,11 @@ class CaseManagerAgent:
         """
         alerts = await list_alerts(self.db, limit=1000)
 
-        by_severity: Dict[str, int] = {}
-        by_agent: Dict[str, int] = {}
-        by_status: Dict[str, int] = {}
-        by_type: Dict[str, int] = {}
-        resolution_hours: List[float] = []
+        by_severity: dict[str, int] = {}
+        by_agent: dict[str, int] = {}
+        by_status: dict[str, int] = {}
+        by_type: dict[str, int] = {}
+        resolution_hours: list[float] = []
 
         for a in alerts:
             sev = a.get("severity", "unknown")
@@ -279,9 +276,9 @@ class CaseManagerAgent:
             # Compute resolution time only for alerts that have been resolved
             if a.get("resolved_at") and a.get("created_at"):
                 try:
-                    created = datetime.fromisoformat(a["created_at"])
-                    resolved = datetime.fromisoformat(a["resolved_at"])
-                    hours = (resolved - created).total_seconds() / 3600
+                    created_dt = datetime.fromisoformat(a["created_at"])
+                    resolved_dt = datetime.fromisoformat(a["resolved_at"])
+                    hours = (resolved_dt - created_dt).total_seconds() / 3600
                     resolution_hours.append(hours)
                 except (ValueError, TypeError):
                     pass
@@ -289,7 +286,7 @@ class CaseManagerAgent:
         total = len(alerts)
         false_positives = by_status.get("false_positive", 0)
         # Denominator includes both 'resolved' and 'false_positive' status alerts
-        resolved = by_status.get("resolved", 0) + false_positives
+        resolved_count = by_status.get("resolved", 0) + false_positives
 
         # Top 10 alert types by frequency — used to identify systemic patterns
         top_types = sorted(by_type.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -306,7 +303,7 @@ class CaseManagerAgent:
             ),
             # None if no alerts have been resolved yet
             "false_positive_rate": (
-                round(false_positives / resolved, 4) if resolved > 0 else None
+                round(false_positives / resolved_count, 4) if resolved_count > 0 else None
             ),
             "top_alert_types": [{"type": t, "count": c} for t, c in top_types],
         }
@@ -317,10 +314,10 @@ class CaseManagerAgent:
 
     def _determine_case_type(
         self,
-        pattern_result: Optional[Dict],
-        monitor_result: Optional[Dict],
-        sanctions_result: Optional[Dict],
-        kyc_result: Optional[Dict],
+        pattern_result: dict | None,
+        monitor_result: dict | None,
+        sanctions_result: dict | None,
+        kyc_result: dict | None,
     ) -> str:
         """Select the primary investigation case type from available signals.
 
@@ -353,16 +350,16 @@ class CaseManagerAgent:
 
     def _determine_priority(
         self,
-        pattern_result: Optional[Dict],
-        monitor_result: Optional[Dict],
-        sanctions_result: Optional[Dict],
+        pattern_result: dict | None,
+        monitor_result: dict | None,
+        sanctions_result: dict | None,
     ) -> str:
         """Map risk signals to a case priority level.
 
         Priority thresholds:
         - critical: sanctions block OR critical pattern risk → 4h SLA
         - high: high pattern risk OR risk_score ≥ 0.7 → 24h SLA
-        - medium: moderate risk_score (0.4–0.7) → 72h SLA
+        - medium: moderate risk_score (0.4-0.7) → 72h SLA
         - low: everything else → 168h SLA
 
         The risk_score thresholds (0.4 and 0.7) were chosen to align with the
@@ -381,7 +378,7 @@ class CaseManagerAgent:
             return "medium"
         return "low"
 
-    def _assign_case(self, priority: str) -> Dict[str, str]:
+    def _assign_case(self, priority: str) -> dict[str, str]:
         """Assign a case to the appropriate compliance team member by priority.
 
         Assignment policy (mirrors CBN's tiered escalation requirement):
@@ -412,10 +409,10 @@ class CaseManagerAgent:
         self,
         case_type: str,
         priority: str,
-        pattern_result: Optional[Dict],
-        monitor_result: Optional[Dict],
-        kyc_result: Optional[Dict],
-        sanctions_result: Optional[Dict],
+        pattern_result: dict | None,
+        monitor_result: dict | None,
+        kyc_result: dict | None,
+        sanctions_result: dict | None,
     ) -> str:
         """Build a pipe-separated case description from all available signals.
 

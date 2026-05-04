@@ -1,0 +1,736 @@
+src/agents/case_manager.py:27:1: I001 [*] Import block is un-sorted or un-formatted
+src/agents/case_manager.py:31:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/agents/case_manager.py:31:1: UP035 `typing.List` is deprecated, use `list` instead
+src/agents/case_manager.py:37:5: F401 [*] `src.database.get_alert` imported but unused
+src/agents/case_manager.py:38:5: F401 [*] `src.database.get_customer` imported but unused
+src/agents/case_manager.py:40:5: F401 [*] `src.database.list_cases` imported but unused
+src/agents/case_manager.py:73:19: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:74:25: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:74:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:75:25: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:75:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:76:21: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:76:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:77:27: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:77:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:78:21: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:78:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:173:46: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:241:49: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:260:22: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:261:19: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:262:20: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:263:18: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:264:27: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/case_manager.py:320:25: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:320:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:321:25: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:321:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:322:27: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:322:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:323:21: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:323:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:356:25: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:356:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:357:25: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:357:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:358:27: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:358:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:365:43: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/case_manager.py:384:46: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:415:25: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:415:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:416:25: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:416:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:417:21: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:417:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/case_manager.py:418:27: UP045 [*] Use `X | None` for type annotations
+src/agents/case_manager.py:418:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/kyc_verifier.py:9:36: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/kyc_verifier.py:23:1: I001 [*] Import block is un-sorted or un-formatted
+src/agents/kyc_verifier.py:26:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/agents/kyc_verifier.py:26:1: UP035 `typing.List` is deprecated, use `list` instead
+src/agents/kyc_verifier.py:30:57: F401 [*] `src.database.now_wat` imported but unused
+src/agents/kyc_verifier.py:62:26: UP045 [*] Use `X | None` for type annotations
+src/agents/kyc_verifier.py:62:35: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/kyc_verifier.py:158:18: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/kyc_verifier.py:198:34: UP045 [*] Use `X | None` for type annotations
+src/agents/kyc_verifier.py:209:34: UP045 [*] Use `X | None` for type annotations
+src/agents/kyc_verifier.py:237:19: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/kyc_verifier.py:239:25: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/kyc_verifier.py:242:26: UP045 [*] Use `X | None` for type annotations
+src/agents/kyc_verifier.py:242:35: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/kyc_verifier.py:256:41: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/kyc_verifier.py:321:30: RUF002 Docstring contains ambiguous `×` (MULTIPLICATION SIGN). Did you mean `x` (LATIN SMALL LETTER X)?
+src/agents/onboarding_screener.py:47:1: I001 [*] Import block is un-sorted or un-formatted
+src/agents/onboarding_screener.py:50:22: F401 [*] `datetime.datetime` imported but unused
+src/agents/onboarding_screener.py:51:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/agents/onboarding_screener.py:51:1: UP035 `typing.List` is deprecated, use `list` instead
+src/agents/onboarding_screener.py:51:20: F401 [*] `typing.Any` imported but unused
+src/agents/onboarding_screener.py:57:5: F401 [*] `src.database.get_customer` imported but unused
+src/agents/onboarding_screener.py:58:5: F401 [*] `src.database.update_customer` imported but unused
+src/agents/onboarding_screener.py:62:5: F401 [*] `src.database.new_id` imported but unused
+src/agents/onboarding_screener.py:75:1: E402 Module level import not at top of file
+src/agents/onboarding_screener.py:75:1: I001 [*] Import block is un-sorted or un-formatted
+src/agents/onboarding_screener.py:77:5: F401 [*] `src.agents.sanctions_screener.EXACT_THRESHOLD` imported but unused
+src/agents/onboarding_screener.py:78:5: F401 [*] `src.agents.sanctions_screener.STRONG_THRESHOLD` imported but unused
+src/agents/onboarding_screener.py:79:5: F401 [*] `src.agents.sanctions_screener.PARTIAL_THRESHOLD` imported but unused
+src/agents/onboarding_screener.py:120:18: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/onboarding_screener.py:120:23: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/onboarding_screener.py:145:22: UP045 [*] Use `X | None` for type annotations
+src/agents/onboarding_screener.py:146:24: UP045 [*] Use `X | None` for type annotations
+src/agents/onboarding_screener.py:198:17: S110 `try`-`except`-`pass` detected, consider logging the exception
+src/agents/onboarding_screener.py:249:52: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/onboarding_screener.py:249:57: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/onboarding_screener.py:354:18: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/onboarding_screener.py:354:23: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/onboarding_screener.py:406:52: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/onboarding_screener.py:406:57: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/onboarding_screener.py:436:44: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/onboarding_screener.py:436:49: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:34:1: I001 [*] Import block is un-sorted or un-formatted
+src/agents/pattern_analyzer.py:39:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/agents/pattern_analyzer.py:39:1: UP035 `typing.List` is deprecated, use `list` instead
+src/agents/pattern_analyzer.py:39:20: F401 [*] `typing.Any` imported but unused
+src/agents/pattern_analyzer.py:43:80: F401 [*] `src.database.now_wat` imported but unused
+src/agents/pattern_analyzer.py:77:25: UP045 [*] Use `X | None` for type annotations
+src/agents/pattern_analyzer.py:78:26: UP045 [*] Use `X | None` for type annotations
+src/agents/pattern_analyzer.py:78:35: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:78:40: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:96:19: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:159:49: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:159:54: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:159:64: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:163:72: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/pattern_analyzer.py:191:44: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:191:49: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:191:59: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:240:48: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:240:53: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:240:63: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:277:42: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:277:47: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:277:57: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:280:47: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/pattern_analyzer.py:314:51: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:314:56: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:314:66: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:326:25: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:326:35: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:359:50: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:359:55: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:359:65: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:387:38: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:387:43: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:387:53: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:418:46: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:418:58: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:418:63: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:418:73: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:459:19: UP045 [*] Use `X | None` for type annotations
+src/agents/pattern_analyzer.py:459:28: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:460:15: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:460:20: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:461:17: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:461:22: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:462:24: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:516:49: RUF010 [*] Use explicit conversion flag
+src/agents/pattern_analyzer.py:523:25: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:523:55: UP045 [*] Use `X | None` for type annotations
+src/agents/pattern_analyzer.py:523:64: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:523:77: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:523:82: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:553:61: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:553:84: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:595:15: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:595:20: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:596:17: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:596:22: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:597:19: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:618:45: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:618:71: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:618:76: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/pattern_analyzer.py:643:33: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/pattern_analyzer.py:643:38: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sanctions_screener.py:35:1: I001 [*] Import block is un-sorted or un-formatted
+src/agents/sanctions_screener.py:40:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/agents/sanctions_screener.py:40:1: UP035 `typing.List` is deprecated, use `list` instead
+src/agents/sanctions_screener.py:40:20: F401 [*] `typing.Any` imported but unused
+src/agents/sanctions_screener.py:44:50: F401 [*] `src.database.list_sanctions_matches` imported but unused
+src/agents/sanctions_screener.py:69:18: UP045 [*] Use `X | None` for type annotations
+src/agents/sanctions_screener.py:69:27: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/sanctions_screener.py:70:24: UP045 [*] Use `X | None` for type annotations
+src/agents/sanctions_screener.py:71:22: UP045 [*] Use `X | None` for type annotations
+src/agents/sanctions_screener.py:72:18: UP045 [*] Use `X | None` for type annotations
+src/agents/sanctions_screener.py:73:22: UP045 [*] Use `X | None` for type annotations
+src/agents/sanctions_screener.py:74:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sanctions_screener.py:93:22: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/sanctions_screener.py:229:50: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/sanctions_screener.py:229:68: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sanctions_screener.py:240:23: RUF005 Consider `[entry.get("name", ""), *entry.get("aliases", [])]` instead of concatenation
+src/agents/sanctions_screener.py:272:57: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sanctions_screener.py:272:68: UP045 [*] Use `X | None` for type annotations
+src/agents/sanctions_screener.py:295:48: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/sanctions_screener.py:309:44: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/sar_generator.py:27:1: I001 [*] Import block is un-sorted or un-formatted
+src/agents/sar_generator.py:31:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/agents/sar_generator.py:31:1: UP035 `typing.List` is deprecated, use `list` instead
+src/agents/sar_generator.py:31:20: F401 [*] `typing.Any` imported but unused
+src/agents/sar_generator.py:73:19: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:74:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:75:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:75:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:76:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:76:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:77:21: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:77:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:78:27: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:78:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:188:19: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:188:28: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:189:22: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:189:31: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:190:16: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:190:25: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:191:24: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/sar_generator.py:191:29: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:192:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:192:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:193:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:193:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:194:21: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:194:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:195:27: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:195:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:290:48: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:290:57: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:308:19: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:308:28: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:309:22: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:309:31: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:310:16: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:310:25: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:311:24: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/sar_generator.py:311:29: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:312:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:312:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:313:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:313:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:314:21: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:314:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:315:27: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:315:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:374:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:374:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:375:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:375:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:376:27: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:376:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:377:19: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:377:28: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:417:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:417:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:418:25: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:418:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:419:27: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:419:36: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/sar_generator.py:420:22: UP045 [*] Use `X | None` for type annotations
+src/agents/sar_generator.py:420:31: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:30:1: I001 [*] Import block is un-sorted or un-formatted
+src/agents/transaction_monitor.py:32:8: F401 [*] `os` imported but unused
+src/agents/transaction_monitor.py:34:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/agents/transaction_monitor.py:34:1: UP035 `typing.List` is deprecated, use `list` instead
+src/agents/transaction_monitor.py:34:37: F401 [*] `typing.Optional` imported but unused
+src/agents/transaction_monitor.py:43:5: F401 [*] `src.database.log_audit` imported but unused
+src/agents/transaction_monitor.py:86:41: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:95:26: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/transaction_monitor.py:110:26: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/transaction_monitor.py:112:23: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/transaction_monitor.py:144:12: RUF003 Comment contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/transaction_monitor.py:298:49: RUF003 Comment contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/transaction_monitor.py:407:79: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/transaction_monitor.py:407:84: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:430:48: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/transaction_monitor.py:430:53: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:435:31: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/agents/transaction_monitor.py:447:79: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:447:88: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:512:88: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:550:76: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:579:95: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:614:70: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:658:73: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:682:9: S110 `try`-`except`-`pass` detected, consider logging the exception
+src/agents/transaction_monitor.py:687:65: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/agents/transaction_monitor.py:735:49: UP006 [*] Use `list` instead of `List` for type annotation
+src/agents/transaction_monitor.py:746:25: RUF002 Docstring contains ambiguous `×` (MULTIPLICATION SIGN). Did you mean `x` (LATIN SMALL LETTER X)?
+src/agents/transaction_monitor.py:747:25: RUF002 Docstring contains ambiguous `×` (MULTIPLICATION SIGN). Did you mean `x` (LATIN SMALL LETTER X)?
+src/data/sample_transactions.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+src/data/sample_transactions.py:10:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/data/sample_transactions.py:10:1: UP035 `typing.List` is deprecated, use `list` instead
+src/data/sample_transactions.py:71:74: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:80:21: RUF003 Comment contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/data/sample_transactions.py:94:76: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/sample_transactions.py:94:81: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:102:39: RUF003 Comment contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/data/sample_transactions.py:123:63: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/sample_transactions.py:123:68: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:178:63: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:200:77: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/sample_transactions.py:200:82: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:227:61: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:249:68: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/sample_transactions.py:249:73: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:276:15: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:278:22: UP045 [*] Use `X | None` for type annotations
+src/data/sample_transactions.py:279:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/sample_transactions.py:279:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sample_transactions.py:285:11: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/sample_transactions.py:285:16: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sanctions_lists.py:7:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/data/sanctions_lists.py:7:1: UP035 `typing.List` is deprecated, use `list` instead
+src/data/sanctions_lists.py:471:15: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sanctions_lists.py:471:25: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/sanctions_lists.py:471:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sanctions_lists.py:480:26: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/sanctions_lists.py:480:31: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/sanctions_lists.py:491:24: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/seed.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+src/data/seed.py:9:8: F401 [*] `uuid` imported but unused
+src/data/seed.py:11:8: F401 [*] `random` imported but unused
+src/data/seed.py:13:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/data/seed.py:13:1: UP035 `typing.List` is deprecated, use `list` instead
+src/data/seed.py:25:5: F401 [*] `src.database.create_escalation` imported but unused
+src/data/seed.py:26:5: F401 [*] `src.database.create_monitoring_run` imported but unused
+src/data/seed.py:27:5: F401 [*] `src.database.update_monitoring_run` imported but unused
+src/data/seed.py:31:5: F401 [*] `src.database.now_wat` imported but unused
+src/data/seed.py:33:5: F401 [*] `src.database.DB_PATH` imported but unused
+src/data/seed.py:373:15: F541 [*] f-string without any placeholders
+src/data/seed.py:443:38: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/seed.py:443:43: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/seed.py:443:64: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/seed.py:443:69: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/seed.py:583:49: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/seed.py:583:54: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/seed.py:583:75: UP006 [*] Use `list` instead of `List` for type annotation
+src/data/seed.py:583:80: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/data/seed.py:960:9: SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+src/data/seed.py:970:9: S110 `try`-`except`-`pass` detected, consider logging the exception
+src/data/seed.py:978:5: F841 Local variable `now` is assigned to but never used
+src/data/seed.py:1070:5: S110 `try`-`except`-`pass` detected, consider logging the exception
+src/data/seed.py:1074:5: SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+src/data/seed.py:1088:5: S110 `try`-`except`-`pass` detected, consider logging the exception
+src/data/seed.py:1100:38: F401 [*] `src.governance.rules.RULES` imported but unused
+src/data/seed.py:1238:9: SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+src/data/seed.py:1248:9: S110 `try`-`except`-`pass` detected, consider logging the exception
+src/data/seed.py:1409:5: S110 `try`-`except`-`pass` detected, consider logging the exception
+src/database.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+src/database.py:16:8: F401 [*] `asyncio` imported but unused
+src/database.py:19:1: UP035 `typing.List` is deprecated, use `list` instead
+src/database.py:19:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/database.py:122:11: RUF001 String contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/database.py:138:59: RUF001 String contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/database.py:159:11: RUF001 String contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/database.py:333:11: RUF001 String contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/database.py:415:19: UP045 [*] Use `X | None` for type annotations
+src/database.py:415:28: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:416:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:416:27: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:417:15: UP045 [*] Use `X | None` for type annotations
+src/database.py:417:24: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:451:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:452:16: UP045 [*] Use `X | None` for type annotations
+src/database.py:455:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:455:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:467:13: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:488:59: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:488:68: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:535:71: UP045 [*] Use `X | None` for type annotations
+src/database.py:535:80: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:542:90: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:542:95: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:555:80: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:555:89: UP045 [*] Use `X | None` for type annotations
+src/database.py:555:98: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:564:14: RUF005 Consider `[*list(updates.values()), customer_id]` instead of concatenation
+src/database.py:574:62: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:574:71: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:610:77: UP045 [*] Use `X | None` for type annotations
+src/database.py:610:86: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:619:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:620:13: UP045 [*] Use `X | None` for type annotations
+src/database.py:623:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:623:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:630:13: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:647:77: UP045 [*] Use `X | None` for type annotations
+src/database.py:648:6: UP045 [*] Use `X | None` for type annotations
+src/database.py:648:15: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:668:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:668:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:689:56: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:689:65: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:721:65: UP045 [*] Use `X | None` for type annotations
+src/database.py:721:74: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:730:13: UP045 [*] Use `X | None` for type annotations
+src/database.py:731:15: UP045 [*] Use `X | None` for type annotations
+src/database.py:732:19: UP045 [*] Use `X | None` for type annotations
+src/database.py:733:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:736:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:736:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:743:13: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:765:74: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:765:83: UP045 [*] Use `X | None` for type annotations
+src/database.py:765:92: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:768:14: RUF005 Consider `[*list(updates.values()), alert_id]` instead of concatenation
+src/database.py:778:66: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:778:75: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:815:75: UP045 [*] Use `X | None` for type annotations
+src/database.py:815:84: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:824:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:825:19: UP045 [*] Use `X | None` for type annotations
+src/database.py:826:21: UP045 [*] Use `X | None` for type annotations
+src/database.py:829:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:829:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:836:13: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:856:84: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:856:93: UP045 [*] Use `X | None` for type annotations
+src/database.py:856:102: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:859:14: RUF005 Consider `[*list(updates.values()), match_id]` instead of concatenation
+src/database.py:869:54: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:869:63: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:906:61: UP045 [*] Use `X | None` for type annotations
+src/database.py:906:70: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:915:13: UP045 [*] Use `X | None` for type annotations
+src/database.py:916:15: UP045 [*] Use `X | None` for type annotations
+src/database.py:917:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:920:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:920:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:923:13: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:942:70: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:942:79: UP045 [*] Use `X | None` for type annotations
+src/database.py:942:88: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:950:14: RUF005 Consider `[*list(updates.values()), sar_id]` instead of concatenation
+src/database.py:960:55: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:960:64: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:993:63: UP045 [*] Use `X | None` for type annotations
+src/database.py:993:72: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1002:13: UP045 [*] Use `X | None` for type annotations
+src/database.py:1003:15: UP045 [*] Use `X | None` for type annotations
+src/database.py:1004:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:1005:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:1008:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:1008:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1015:13: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:1037:72: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1037:81: UP045 [*] Use `X | None` for type annotations
+src/database.py:1037:90: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1045:14: RUF005 Consider `[*list(updates.values()), case_id]` instead of concatenation
+src/database.py:1055:67: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1055:76: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1093:43: UP045 [*] Use `X | None` for type annotations
+src/database.py:1094:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:1094:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1119:61: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1119:70: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1164:75: UP045 [*] Use `X | None` for type annotations
+src/database.py:1164:84: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1173:21: UP045 [*] Use `X | None` for type annotations
+src/database.py:1174:18: UP045 [*] Use `X | None` for type annotations
+src/database.py:1175:16: UP045 [*] Use `X | None` for type annotations
+src/database.py:1176:29: UP045 [*] Use `X | None` for type annotations
+src/database.py:1179:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:1179:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1187:13: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:1209:84: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1209:93: UP045 [*] Use `X | None` for type annotations
+src/database.py:1209:102: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1216:14: RUF005 Consider `[*list(updates.values()), escalation_id]` instead of concatenation
+src/database.py:1226:65: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1226:74: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1257:72: UP045 [*] Use `X | None` for type annotations
+src/database.py:1257:81: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1266:13: UP045 [*] Use `X | None` for type annotations
+src/database.py:1267:15: UP045 [*] Use `X | None` for type annotations
+src/database.py:1270:6: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:1270:11: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1277:13: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:1293:81: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1293:90: UP045 [*] Use `X | None` for type annotations
+src/database.py:1293:99: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1296:14: RUF005 Consider `[*list(updates.values()), run_id]` instead of concatenation
+src/database.py:1306:65: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1306:74: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1342:83: UP045 [*] Use `X | None` for type annotations
+src/database.py:1342:92: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1351:61: UP006 [*] Use `list` instead of `List` for type annotation
+src/database.py:1351:66: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1362:60: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/database.py:1378:12: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/audit.py:21:8: F401 [*] `json` imported but unused
+src/governance/audit.py:22:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/governance/audit.py:26:37: F401 [*] `src.database.new_id` imported but unused
+src/governance/audit.py:26:45: F401 [*] `src.database.now_wat` imported but unused
+src/governance/audit.py:35:17: UP045 [*] Use `X | None` for type annotations
+src/governance/audit.py:36:14: UP045 [*] Use `X | None` for type annotations
+src/governance/audit.py:36:23: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/audit.py:37:17: UP045 [*] Use `X | None` for type annotations
+src/governance/audit.py:81:19: UP045 [*] Use `X | None` for type annotations
+src/governance/audit.py:119:19: UP045 [*] Use `X | None` for type annotations
+src/governance/audit.py:119:28: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/audit.py:120:18: UP045 [*] Use `X | None` for type annotations
+src/governance/audit.py:120:27: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/audit.py:187:14: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/audit.py:215:14: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/engine.py:27:1: I001 [*] Import block is un-sorted or un-formatted
+src/governance/engine.py:29:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/governance/engine.py:29:1: UP035 `typing.List` is deprecated, use `list` instead
+src/governance/engine.py:33:41: F401 [*] `src.governance.rules.get_risk_tier_for_amount` imported but unused
+src/governance/engine.py:62:23: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/engine.py:63:18: UP045 [*] Use `X | None` for type annotations
+src/governance/engine.py:63:27: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/engine.py:80:20: UP006 [*] Use `list` instead of `List` for type annotation
+src/governance/escalation.py:29:1: I001 [*] Import block is un-sorted or un-formatted
+src/governance/escalation.py:31:8: F401 [*] `json` imported but unused
+src/governance/escalation.py:33:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/governance/escalation.py:33:1: UP035 `typing.List` is deprecated, use `list` instead
+src/governance/escalation.py:45:5: F401 [*] `src.database.new_id` imported but unused
+src/governance/escalation.py:48:34: F401 [*] `src.governance.rules.RULES` imported but unused
+src/governance/escalation.py:69:10: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/escalation.py:122:10: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/escalation.py:170:39: UP045 [*] Use `X | None` for type annotations
+src/governance/escalation.py:171:10: UP006 [*] Use `list` instead of `List` for type annotation
+src/governance/escalation.py:171:15: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/escalation.py:253:27: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/escalation.py:267:26: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/escalation.py:287:27: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/governance/rules.py:16:1: UP035 `typing.List` is deprecated, use `list` instead
+src/governance/rules.py:170:35: UP006 [*] Use `list` instead of `List` for type annotation
+src/governance/rules.py:182:32: UP006 [*] Use `list` instead of `List` for type annotation
+src/governance/rules.py:189:25: UP006 [*] Use `list` instead of `List` for type annotation
+src/governance/rules.py:196:38: UP006 [*] Use `list` instead of `List` for type annotation
+src/governance/rules.py:202:33: UP006 [*] Use `list` instead of `List` for type annotation
+src/main.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+src/main.py:12:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/main.py:12:1: UP035 `typing.List` is deprecated, use `list` instead
+src/main.py:12:31: F401 [*] `typing.List` imported but unused
+src/main.py:14:8: F401 [*] `aiosqlite` imported but unused
+src/main.py:51:5: F401 [*] `src.models.Customer` imported but unused
+src/main.py:52:5: F401 [*] `src.models.CustomerCreate` imported but unused
+src/main.py:53:5: F401 [*] `src.models.Transaction` imported but unused
+src/main.py:56:5: F401 [*] `src.models.Alert` imported but unused
+src/main.py:59:5: F401 [*] `src.models.SanctionsScreenRequest` imported but unused
+src/main.py:61:5: F401 [*] `src.models.Sar` imported but unused
+src/main.py:65:5: F401 [*] `src.models.Case` imported but unused
+src/main.py:70:5: F401 [*] `src.models.PipelineResult` imported but unused
+src/main.py:100:5: F841 Local variable `db_path` is assigned to but never used
+src/main.py:138:29: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/main.py:138:48: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/main.py:221:40: F401 [*] `src.models.SanctionsScreenResult` imported but unused
+src/main.py:438:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:439:13: UP045 [*] Use `X | None` for type annotations
+src/main.py:688:29: UP045 [*] Use `X | None` for type annotations
+src/main.py:708:21: UP045 [*] Use `X | None` for type annotations
+src/main.py:709:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:710:29: UP045 [*] Use `X | None` for type annotations
+src/main.py:768:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/main.py:788:13: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+src/main.py:849:13: UP045 [*] Use `X | None` for type annotations
+src/main.py:850:15: UP045 [*] Use `X | None` for type annotations
+src/main.py:922:13: UP045 [*] Use `X | None` for type annotations
+src/main.py:923:15: UP045 [*] Use `X | None` for type annotations
+src/main.py:924:19: UP045 [*] Use `X | None` for type annotations
+src/main.py:925:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:1013:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:1014:21: UP045 [*] Use `X | None` for type annotations
+src/main.py:1030:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:1031:19: UP045 [*] Use `X | None` for type annotations
+src/main.py:1032:21: UP045 [*] Use `X | None` for type annotations
+src/main.py:1084:13: UP045 [*] Use `X | None` for type annotations
+src/main.py:1085:15: UP045 [*] Use `X | None` for type annotations
+src/main.py:1086:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:1231:13: UP045 [*] Use `X | None` for type annotations
+src/main.py:1232:15: UP045 [*] Use `X | None` for type annotations
+src/main.py:1233:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:1234:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:1274:9: SIM102 Use a single `if` statement instead of nested `if` statements
+src/main.py:1281:18: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/main.py:1339:22: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/main.py:1374:18: UP045 [*] Use `X | None` for type annotations
+src/main.py:1395:45: UP045 [*] Use `X | None` for type annotations
+src/main.py:1441:13: DTZ011 `datetime.date.today()` used
+src/main.py:1485:16: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/main.py:1486:18: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/main.py:1487:18: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+src/models.py:15:22: F401 [*] `datetime.datetime` imported but unused
+src/models.py:16:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/models.py:16:1: UP035 `typing.List` is deprecated, use `list` instead
+src/models.py:52:10: UP045 [*] Use `X | None` for type annotations
+src/models.py:54:10: UP045 [*] Use `X | None` for type annotations
+src/models.py:55:20: UP045 [*] Use `X | None` for type annotations
+src/models.py:56:12: UP045 [*] Use `X | None` for type annotations
+src/models.py:57:14: UP045 [*] Use `X | None` for type annotations
+src/models.py:68:5: PIE790 [*] Unnecessary `pass` statement
+src/models.py:80:26: UP045 [*] Use `X | None` for type annotations
+src/models.py:84:20: UP045 [*] Use `X | None` for type annotations
+src/models.py:86:24: UP045 [*] Use `X | None` for type annotations
+src/models.py:87:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:88:26: UP045 [*] Use `X | None` for type annotations
+src/models.py:120:24: UP045 [*] Use `X | None` for type annotations
+src/models.py:121:27: UP045 [*] Use `X | None` for type annotations
+src/models.py:126:23: UP045 [*] Use `X | None` for type annotations
+src/models.py:128:14: UP045 [*] Use `X | None` for type annotations
+src/models.py:130:16: UP045 [*] Use `X | None` for type annotations
+src/models.py:132:19: UP045 [*] Use `X | None` for type annotations
+src/models.py:138:5: PIE790 [*] Unnecessary `pass` statement
+src/models.py:146:10: RUF003 Comment contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/models.py:147:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:156:19: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:168:21: UP045 [*] Use `X | None` for type annotations
+src/models.py:169:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:175:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:176:44: RUF003 Comment contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/models.py:177:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:179:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:184:5: PIE790 [*] Unnecessary `pass` statement
+src/models.py:192:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:225:14: UP045 [*] Use `X | None` for type annotations
+src/models.py:225:23: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:226:20: UP045 [*] Use `X | None` for type annotations
+src/models.py:227:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:228:14: UP045 [*] Use `X | None` for type annotations
+src/models.py:229:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:230:21: UP045 [*] Use `X | None` for type annotations
+src/models.py:236:49: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/models.py:250:14: UP045 [*] Use `X | None` for type annotations
+src/models.py:250:23: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:261:14: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:288:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:289:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:291:22: UP045 [*] Use `X | None` for type annotations
+src/models.py:293:22: UP045 [*] Use `X | None` for type annotations
+src/models.py:295:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:306:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:307:25: UP045 [*] Use `X | None` for type annotations
+src/models.py:309:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:311:21: UP045 [*] Use `X | None` for type annotations
+src/models.py:328:22: UP045 [*] Use `X | None` for type annotations
+src/models.py:349:21: UP045 [*] Use `X | None` for type annotations
+src/models.py:358:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:359:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:361:16: UP045 [*] Use `X | None` for type annotations
+src/models.py:364:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:365:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:372:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:375:16: UP045 [*] Use `X | None` for type annotations
+src/models.py:388:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:414:16: UP045 [*] Use `X | None` for type annotations
+src/models.py:415:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:422:57: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/models.py:435:22: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:450:21: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:468:10: RUF003 Comment contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/models.py:472:15: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:484:24: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:486:26: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:501:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:519:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:526:19: UP045 [*] Use `X | None` for type annotations
+src/models.py:547:19: UP045 [*] Use `X | None` for type annotations
+src/models.py:558:16: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:572:13: RUF002 Docstring contains ambiguous `–` (EN DASH). Did you mean `-` (HYPHEN-MINUS)?
+src/models.py:585:21: UP045 [*] Use `X | None` for type annotations
+src/models.py:587:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:589:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:590:27: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:593:25: UP045 [*] Use `X | None` for type annotations
+src/models.py:609:22: UP045 [*] Use `X | None` for type annotations
+src/models.py:610:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:612:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:614:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:616:21: UP045 [*] Use `X | None` for type annotations
+src/models.py:618:21: UP045 [*] Use `X | None` for type annotations
+src/models.py:619:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:653:29: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:653:34: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:666:18: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:668:15: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:670:16: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:672:27: UP045 [*] Use `X | None` for type annotations
+src/models.py:674:26: UP045 [*] Use `X | None` for type annotations
+src/models.py:676:22: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:676:27: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:695:10: UP045 [*] Use `X | None` for type annotations
+src/models.py:696:10: UP045 [*] Use `X | None` for type annotations
+src/models.py:697:20: UP045 [*] Use `X | None` for type annotations
+src/models.py:698:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:699:12: UP045 [*] Use `X | None` for type annotations
+src/models.py:700:14: UP045 [*] Use `X | None` for type annotations
+src/models.py:704:14: UP045 [*] Use `X | None` for type annotations
+src/models.py:704:23: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:706:26: UP045 [*] Use `X | None` for type annotations
+src/models.py:723:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:730:24: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:730:29: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:732:20: UP045 [*] Use `X | None` for type annotations
+src/models.py:747:25: UP045 [*] Use `X | None` for type annotations
+src/models.py:779:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:781:23: UP045 [*] Use `X | None` for type annotations
+src/models.py:795:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:796:25: UP045 [*] Use `X | None` for type annotations
+src/models.py:797:23: UP045 [*] Use `X | None` for type annotations
+src/models.py:799:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:800:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:831:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:831:24: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:840:19: UP045 [*] Use `X | None` for type annotations
+src/models.py:846:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:859:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:863:25: UP045 [*] Use `X | None` for type annotations
+src/models.py:872:14: UP045 [*] Use `X | None` for type annotations
+src/models.py:875:17: UP045 [*] Use `X | None` for type annotations
+src/models.py:876:15: UP045 [*] Use `X | None` for type annotations
+src/models.py:889:18: UP045 [*] Use `X | None` for type annotations
+src/models.py:894:24: UP006 [*] Use `list` instead of `List` for type annotation
+src/models.py:894:29: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/models.py:895:20: UP045 [*] Use `X | None` for type annotations
+src/monitoring/continuous_monitor.py:33:1: I001 [*] Import block is un-sorted or un-formatted
+src/monitoring/continuous_monitor.py:36:22: F401 [*] `datetime.datetime` imported but unused
+src/monitoring/continuous_monitor.py:37:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/monitoring/continuous_monitor.py:37:1: UP035 `typing.List` is deprecated, use `list` instead
+src/monitoring/continuous_monitor.py:51:5: F401 [*] `src.database.new_id` imported but unused
+src/monitoring/continuous_monitor.py:84:61: UP045 [*] Use `X | None` for type annotations
+src/monitoring/continuous_monitor.py:84:70: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/continuous_monitor.py:84:87: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/continuous_monitor.py:193:18: UP006 [*] Use `list` instead of `List` for type annotation
+src/monitoring/continuous_monitor.py:194:24: UP045 [*] Use `X | None` for type annotations
+src/monitoring/continuous_monitor.py:195:10: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/continuous_monitor.py:202:21: RUF005 Consider `[name, *aliases]` instead of concatenation
+src/monitoring/continuous_monitor.py:208:29: RUF059 Unpacked variable `best_name` is never used
+src/monitoring/continuous_monitor.py:224:50: UP006 [*] Use `list` instead of `List` for type annotation
+src/monitoring/continuous_monitor.py:224:55: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/continuous_monitor.py:225:10: UP006 [*] Use `list` instead of `List` for type annotation
+src/monitoring/continuous_monitor.py:225:15: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/continuous_monitor.py:247:25: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/continuous_monitor.py:247:38: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/continuous_monitor.py:280:9: SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+src/monitoring/continuous_monitor.py:291:9: S110 `try`-`except`-`pass` detected, consider logging the exception
+src/monitoring/continuous_monitor.py:295:25: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/continuous_monitor.py:295:44: UP006 [*] Use `list` instead of `List` for type annotation
+src/monitoring/continuous_monitor.py:295:49: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/list_manager.py:24:1: I001 [*] Import block is un-sorted or un-formatted
+src/monitoring/list_manager.py:28:22: F401 [*] `datetime.datetime` imported but unused
+src/monitoring/list_manager.py:29:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+src/monitoring/list_manager.py:29:1: UP035 `typing.List` is deprecated, use `list` instead
+src/monitoring/list_manager.py:29:37: F401 [*] `typing.Optional` imported but unused
+src/monitoring/list_manager.py:78:42: UP006 [*] Use `list` instead of `List` for type annotation
+src/monitoring/list_manager.py:78:47: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/list_manager.py:93:40: UP006 [*] Use `list` instead of `List` for type annotation
+src/monitoring/list_manager.py:93:45: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/list_manager.py:101:60: UP006 [*] Use `list` instead of `List` for type annotation
+src/monitoring/list_manager.py:101:65: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/list_manager.py:101:75: UP006 [*] Use `dict` instead of `Dict` for type annotation
+src/monitoring/list_manager.py:116:32: E741 Ambiguous variable name: `l`
+src/monitoring/list_manager.py:129:9: F841 Local variable `updated` is assigned to but never used
+Found 734 errors.
+[*] 643 fixable with the `--fix` option (16 hidden fixes can be enabled with the `--unsafe-fixes` option).

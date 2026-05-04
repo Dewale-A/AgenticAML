@@ -1,12 +1,15 @@
-// Horizontal tab navigation - switches between the main dashboard sections
+// Horizontal tab navigation - switches between the main dashboard sections.
+// Tab order follows the customer lifecycle: Dashboard > Onboarding > Transactions > Alerts > Screening > SARs > Cases > Governance
 'use client'
-import { LayoutDashboard, ArrowLeftRight, Bell, Search, FileText, Briefcase, BookOpen } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Bell, ShieldAlert, FileText, Briefcase, BookOpen, UserPlus } from 'lucide-react'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'onboarding', label: 'Customer Onboarding', icon: UserPlus },
   { id: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
   { id: 'alerts', label: 'Alerts', icon: Bell },
-  { id: 'sanctions', label: 'Sanctions', icon: Search },
+  // Renamed from "Sanctions" to "Watchlist Screening" per CBN terminology (covers Sanctions + PEP + Adverse Media)
+  { id: 'watchlist', label: 'Watchlist Screening', icon: ShieldAlert },
   { id: 'sars', label: 'SARs', icon: FileText },
   { id: 'cases', label: 'Cases', icon: Briefcase },
   { id: 'governance', label: 'Governance', icon: BookOpen },

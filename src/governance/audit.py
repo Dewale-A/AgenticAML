@@ -18,12 +18,11 @@ The audit_trail table is append-only. These helpers should never be called
 to update or delete existing entries — only to append new ones.
 """
 
-import json
-from typing import Any, Dict, Optional
+from typing import Any
 
 import aiosqlite
 
-from src.database import log_audit, new_id, now_wat
+from src.database import log_audit
 
 
 async def log_agent_decision(
@@ -32,9 +31,9 @@ async def log_agent_decision(
     entity_type: str,
     entity_id: str,
     decision: str,
-    confidence: Optional[float],
-    details: Optional[Dict[str, Any]] = None,
-    risk_score: Optional[float] = None,
+    confidence: float | None,
+    details: dict[str, Any] | None = None,
+    risk_score: float | None = None,
 ):
     """Log an agent decision to the immutable audit trail.
 
@@ -78,7 +77,7 @@ async def log_governance_decision(
     passed: bool,
     reason: str,
     requires_human: bool = False,
-    action_taken: Optional[str] = None,
+    action_taken: str | None = None,
 ):
     """Log a governance gate evaluation.
 
@@ -116,8 +115,8 @@ async def log_human_decision(
     actor: str,
     decision: str,
     rationale: str,
-    before_state: Optional[Dict] = None,
-    after_state: Optional[Dict] = None,
+    before_state: dict | None = None,
+    after_state: dict | None = None,
 ):
     """Log a human review or approval decision.
 
@@ -184,7 +183,7 @@ async def log_sar_lifecycle(
     sar_id: str,
     event: str,
     actor: str,
-    details: Dict[str, Any],
+    details: dict[str, Any],
 ):
     """Log SAR lifecycle events: drafted, approved, rejected, filed.
 
@@ -212,7 +211,7 @@ async def log_case_lifecycle(
     case_id: str,
     event: str,
     actor: str,
-    details: Dict[str, Any],
+    details: dict[str, Any],
 ):
     """Log case lifecycle events: created, status_updated, reassigned, closed.
 
