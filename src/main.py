@@ -541,6 +541,82 @@ async def update_risk_tier(customer_id: str, body: RiskTierUpdate):
 # Onboarding (Agent 0 pre-screening before account activation)
 # ---------------------------------------------------------------------------
 
+
+@app.get("/customers/onboarding", tags=["Onboarding"])
+async def list_onboarding_queue(
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+):
+    """List customers in the onboarding pipeline with their screening status.
+
+    Returns customers who were submitted through the onboarding endpoint,
+    including those pending screening, pending escalation (PEP/adverse media),
+    blocked (sanctions), and approved. This powers the Customer Onboarding
+    tab in the frontend dashboard.
+    """
+    async with get_db() as db:
+        # Fetch escalations tied to customer onboarding to determine status
+        escalations = await list_escalations(
+            db, entity_type="customer_onboarding", limit=200
+        )
+        # Build a map of customer_id -> escalation for quick lookup
+        esc_map = {}
+        for e in escalations:
+            cid = e.get("entity_id")
+            if cid:
+                esc_map[cid] = e
+
+        # Fetch recently created customers (onboarding candidates)
+        # In production this would have an onboarding_status column;
+        # for now we infer from escalations and kyc_status
+        query = "SELECT * FROM customers ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        async with db.execute(query, [limit, offset]) as cursor:
+            rows = await cursor.fetchall()
+            columns = [d[0] for d in cursor.description]
+            customers = [dict(zip(columns, row)) for row in rows]
+
+        records = []
+        for c in customers:
+            cid = c["id"]
+            esc = esc_map.get(cid)
+            # Determine onboarding status from escalation state
+            if esc:
+                esc_status = esc.get("current_status", "pending")
+                if esc_status == "pending":
+                    ob_status = "pending_escalation"
+                elif esc_status == "approved":
+                    ob_status = "approved_high_risk"
+                elif esc_status == "rejected":
+                    ob_status = "blocked"
+                else:
+                    ob_status = esc_status
+            elif c.get("kyc_status") == "failed":
+                ob_status = "blocked"
+            elif c.get("kyc_status") == "verified":
+                ob_status = "clear"
+            else:
+                ob_status = "clear"
+
+            # Apply status filter if provided
+            if status and status != "all" and ob_status != status:
+                continue
+
+            records.append({
+                "id": cid,
+                "customer_id": cid,
+                "name": c.get("name", "Unknown"),
+                "status": ob_status,
+                "risk_tier": c.get("risk_tier", "low"),
+                "screening_result": esc.get("escalation_reason") if esc else None,
+                "escalation_id": esc.get("id") if esc else None,
+                "created_at": c.get("created_at", ""),
+                "expires_at": esc.get("expires_at") if esc else None,
+            })
+
+        return {"records": records, "total": len(records)}
+
+
 @app.post("/customers/onboard", tags=["Onboarding"])
 async def onboard_customer(body: OnboardingRequest):
     """Screen a new customer applicant before account creation.
