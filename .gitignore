@@ -6,3 +6,5 @@ __pycache__/
 frontend/node_modules/
 frontend/.next/
 .DS_Store
+src/data/cache/*.csv
+src/data/cache/*.xml
