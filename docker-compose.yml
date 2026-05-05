@@ -7,6 +7,8 @@ services:
       - aml_data:/app/data
     env_file:
       - .env
+    environment:
+      - LIVE_SANCTIONS=true
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
