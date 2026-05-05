@@ -1,8 +1,31 @@
 """
-Simulated sanctions and PEP lists for AgenticAML demo.
+Sanctions and PEP lists for AgenticAML.
+
+In simulated mode (default, LIVE_SANCTIONS=false): serves the hardcoded
+SANCTIONS_DB entries designed to match seed customers for demo and testing.
+
+In live mode (LIVE_SANCTIONS=true): merges real OFAC SDN and UN Consolidated
+data from official sources with the simulated domestic/PEP/internal lists.
+Falls back to the full simulated SANCTIONS_DB if live downloads fail.
+
 Covers: OFAC SDN, UN Consolidated, Nigerian domestic watchlist, PEP database.
 Includes near-matches to demo customer names for fuzzy matching demonstration.
 """
+
+from __future__ import annotations
+
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Live data flag
+# ---------------------------------------------------------------------------
+# Controls whether get_sanctions_db() attempts real downloads.
+# Default is False so existing tests pass without network access.
+# Set LIVE_SANCTIONS=true in production or when testing live integration.
+LIVE_DATA_ENABLED: bool = os.getenv("LIVE_SANCTIONS", "false").lower() == "true"
 
 
 # ---------------------------------------------------------------------------
@@ -491,3 +514,78 @@ def count_by_list() -> dict[str, int]:
     """Return count of entries per list."""
     # Useful for dashboard stats and validating list coverage (CBN audit requirement)
     return {name: len(entries) for name, entries in SANCTIONS_DB.items()}
+
+
+# ---------------------------------------------------------------------------
+# Live-data accessor
+# ---------------------------------------------------------------------------
+
+async def get_sanctions_db() -> dict[str, list[dict]]:
+    """Return the active sanctions database, using live data when enabled.
+
+    When LIVE_DATA_ENABLED is False (the default): returns SANCTIONS_DB
+    directly without any network calls. This preserves existing test behaviour
+    and is the safe default for development and CI environments.
+
+    When LIVE_DATA_ENABLED is True: merges real OFAC SDN and UN Consolidated
+    entries (downloaded from official sources) with the locally maintained
+    simulated NIGERIAN_DOMESTIC, PEP_DATABASE, and INTERNAL_WATCHLIST entries.
+    If any live download fails, logs a warning and falls back to the full
+    simulated SANCTIONS_DB so screening continues uninterrupted.
+
+    The merged structure keeps the same dict[str, list[dict]] shape as
+    SANCTIONS_DB so all callers (agents, list manager) need no structural changes.
+    """
+    if not LIVE_DATA_ENABLED:
+        # Fast path: no network, no I/O. Return simulated data as-is.
+        # This is the path taken in all tests and local development.
+        return SANCTIONS_DB
+
+    # Live mode: attempt to serve real OFAC + UN data merged with local lists.
+    # Import deferred to this function so the module does not import httpx or
+    # trigger any network activity at module load time when LIVE_SANCTIONS=false.
+    try:
+        from src.data.live_sanctions import get_cached_entries
+
+        merged: dict[str, list[dict]] = {}
+
+        # OFAC SDN: try live cache first, fall back to simulated entries.
+        ofac_live = get_cached_entries("ofac_sdn_live")
+        if ofac_live is not None:
+            merged["OFAC_SDN"] = ofac_live
+            logger.debug(f"get_sanctions_db: OFAC SDN live ({len(ofac_live)} entries)")
+        else:
+            # Live data not yet downloaded (server just started, or download failed).
+            # Use simulated entries so screening is never disabled.
+            merged["OFAC_SDN"] = OFAC_SDN
+            logger.warning(
+                "get_sanctions_db: OFAC SDN live cache empty, using simulated fallback "
+                "(run POST /screening-lists/update to download real data)"
+            )
+
+        # UN Consolidated: same pattern as OFAC.
+        un_live = get_cached_entries("un_consolidated_live")
+        if un_live is not None:
+            merged["UN_CONSOLIDATED"] = un_live
+            logger.debug(f"get_sanctions_db: UN Consolidated live ({len(un_live)} entries)")
+        else:
+            merged["UN_CONSOLIDATED"] = UN_CONSOLIDATED
+            logger.warning(
+                "get_sanctions_db: UN Consolidated live cache empty, using simulated fallback"
+            )
+
+        # Domestic, PEP, and internal lists remain simulated.
+        # These are locally maintained and do not have public download sources.
+        merged["NIGERIAN_DOMESTIC"] = NIGERIAN_DOMESTIC
+        merged["PEP_DATABASE"] = PEP_DATABASE
+        merged["INTERNAL_WATCHLIST"] = INTERNAL_WATCHLIST
+
+        return merged
+
+    except Exception as e:
+        # Any unexpected error in the live data path must not break screening.
+        # Log the error and return the full simulated database as a safe fallback.
+        logger.error(
+            f"get_sanctions_db: live data error ({e}), falling back to simulated SANCTIONS_DB"
+        )
+        return SANCTIONS_DB

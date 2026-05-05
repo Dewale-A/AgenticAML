@@ -101,6 +101,37 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"Seed skipped: {e}")
 
+    # ---------------------------------------------------------------------------
+    # Live sanctions startup check (only when LIVE_SANCTIONS=true).
+    # Attempts to pre-warm the disk cache so the first screening request does
+    # not block waiting for a large file download.
+    # If the download fails, a warning is logged and the server continues
+    # operating with the simulated SANCTIONS_DB as a fallback.
+    # ---------------------------------------------------------------------------
+    live_sanctions = os.getenv("LIVE_SANCTIONS", "false").lower() == "true"
+    if live_sanctions:
+        print("[startup] LIVE_SANCTIONS=true: attempting pre-download of OFAC SDN and UN Consolidated lists...")
+        try:
+            from src.data.live_sanctions import refresh_all_lists as live_refresh
+            stats = await live_refresh()
+            for list_name, result in stats.items():
+                if result.get("status") == "success":
+                    print(
+                        f"[startup] {list_name}: {result['entry_count']:,} entries "
+                        f"in {result['elapsed_seconds']}s"
+                    )
+                else:
+                    print(
+                        f"[startup] WARNING: {list_name} download failed: "
+                        f"{result.get('error', 'unknown error')}. "
+                        f"Screening will use simulated fallback data."
+                    )
+        except Exception as e:
+            print(
+                f"[startup] WARNING: live sanctions pre-download failed ({e}). "
+                f"Screening will use simulated data until POST /screening-lists/update succeeds."
+            )
+
     yield  # Application runs; nothing to clean up on shutdown
 
 
@@ -898,6 +929,10 @@ async def get_monitoring_status():
             db, agent_source="continuous_monitor", status="open", limit=100
         )
 
+    # Indicate whether the server is using live or simulated sanctions data.
+    # This is visible in the dashboard so compliance teams know the data source.
+    live_mode = os.getenv("LIVE_SANCTIONS", "false").lower() == "true"
+
     return {
         "last_run": last_run,
         "total_runs": len(all_runs),
@@ -905,6 +940,10 @@ async def get_monitoring_status():
         "failed_runs": len(failed),
         "open_monitoring_alerts": len(monitoring_alerts),
         "screening_lists": screening_lists,
+        # list_source indicates whether OFAC/UN data is live or simulated.
+        # 'live' = real data from US Treasury and UN SC (LIVE_SANCTIONS=true).
+        # 'simulated' = hardcoded demo data for development and testing.
+        "list_source": "live" if live_mode else "simulated",
         "generated_at": now_wat(),
     }
 
@@ -960,20 +999,27 @@ async def get_screening_lists():
 async def update_screening_lists():
     """Refresh all screening lists: check for new versions and update checksums.
 
-    In demo mode, recomputes checksums from SANCTIONS_DB. In production, this
-    would download list files from OFAC/UN source URLs, parse them, and store
-    the updated entries. Unchanged lists (same checksum) are skipped to avoid
-    unnecessary DB writes.
+    When LIVE_SANCTIONS=false (default): recomputes checksums from SANCTIONS_DB.
+    Unchanged lists (same checksum) are skipped to avoid unnecessary DB writes.
+
+    When LIVE_SANCTIONS=true: triggers real downloads from OFAC US Treasury and
+    UN Security Council sources before updating DB records. Falls back to
+    simulated entries if any download fails so screening continues uninterrupted.
     """
+    live_mode = os.getenv("LIVE_SANCTIONS", "false").lower() == "true"
+
     async with get_db() as db:
         list_manager = ListManager(db)
         results = await list_manager.refresh_all_lists()
+
     updated = [r for r in results if r.get("status") == "updated"]
     unchanged = [r for r in results if r.get("status") == "unchanged"]
     return {
         "results": results,
         "updated_count": len(updated),
         "unchanged_count": len(unchanged),
+        # Indicate whether this refresh used live downloads or simulated checksums.
+        "data_source": "live" if live_mode else "simulated",
         "refreshed_at": now_wat(),
     }
 

@@ -30,7 +30,7 @@ from typing import Any
 
 import aiosqlite
 
-from src.data.sanctions_lists import SANCTIONS_DB
+from src.data.sanctions_lists import LIVE_DATA_ENABLED, SANCTIONS_DB
 from src.database import list_screening_lists, now_wat, upsert_screening_list
 
 # WAT timezone — all timestamps in Nigerian local time per CBN requirements
@@ -79,15 +79,83 @@ class ListManager:
         """Refresh all configured screening lists and return update summaries.
 
         Called at startup and by the POST /screening-lists/update endpoint.
-        For each list, computes the current checksum from SANCTIONS_DB and
-        updates the screening_lists table if the data has changed.
+
+        When LIVE_DATA_ENABLED is False (default): computes checksums from
+        SANCTIONS_DB and updates the screening_lists table if data changed.
+
+        When LIVE_DATA_ENABLED is True: triggers real downloads from OFAC and
+        UN sources, then updates the screening_lists table with actual entry
+        counts and checksums from the downloaded data. Simulated lists
+        (NIGERIAN_DOMESTIC, PEP_DATABASE, INTERNAL_WATCHLIST) are always
+        refreshed from SANCTIONS_DB regardless of the live flag because
+        those lists have no public download source.
 
         Returns a list of update result dicts, one per list.
         """
         results = []
-        for list_name, entries in SANCTIONS_DB.items():
-            result = await self._refresh_list(list_name, entries)
-            results.append(result)
+
+        if LIVE_DATA_ENABLED:
+            # Trigger real downloads for OFAC and UN lists.
+            # Deferred import keeps httpx out of the import chain when live mode is off.
+            from src.data.live_sanctions import (
+                download_ofac_sdn,
+                download_un_consolidated,
+            )
+
+            # Download OFAC SDN with full version tracking.
+            try:
+                ofac_entries = await download_ofac_sdn()
+                result = await self._refresh_list(
+                    "OFAC_SDN",
+                    ofac_entries,
+                    source_url=LIST_METADATA.get("ofac_sdn", {}).get("source_url"),
+                    data_source="live",
+                )
+                results.append(result)
+            except Exception as e:
+                # On download failure: fall back to simulated entries so the
+                # DB record is still updated and dashboard shows a valid state.
+                import logging
+                logging.getLogger(__name__).error(
+                    f"OFAC SDN live download failed ({e}), falling back to simulated entries"
+                )
+                result = await self._refresh_list("OFAC_SDN", SANCTIONS_DB.get("OFAC_SDN", []))
+                result["data_source"] = "simulated_fallback"
+                result["download_error"] = str(e)
+                results.append(result)
+
+            # Download UN Consolidated with full version tracking.
+            try:
+                un_entries = await download_un_consolidated()
+                result = await self._refresh_list(
+                    "UN_CONSOLIDATED",
+                    un_entries,
+                    source_url=LIST_METADATA.get("un_consolidated", {}).get("source_url"),
+                    data_source="live",
+                )
+                results.append(result)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(
+                    f"UN Consolidated live download failed ({e}), falling back to simulated entries"
+                )
+                result = await self._refresh_list("UN_CONSOLIDATED", SANCTIONS_DB.get("UN_CONSOLIDATED", []))
+                result["data_source"] = "simulated_fallback"
+                result["download_error"] = str(e)
+                results.append(result)
+
+            # Always refresh locally maintained lists from SANCTIONS_DB.
+            for list_name in ["NIGERIAN_DOMESTIC", "PEP_DATABASE", "INTERNAL_WATCHLIST"]:
+                entries = SANCTIONS_DB.get(list_name, [])
+                result = await self._refresh_list(list_name, entries, data_source="simulated")
+                results.append(result)
+
+        else:
+            # Default (simulated) mode: checksum all lists from SANCTIONS_DB.
+            for list_name, entries in SANCTIONS_DB.items():
+                result = await self._refresh_list(list_name, entries)
+                results.append(result)
+
         return results
 
     async def get_list_status(self) -> list[dict]:
@@ -98,40 +166,59 @@ class ListManager:
         """
         return await list_screening_lists(self.db)
 
-    async def _refresh_list(self, list_name: str, entries: list[dict]) -> dict[str, Any]:
+    async def _refresh_list(
+        self,
+        list_name: str,
+        entries: list[dict],
+        source_url: str | None = None,
+        data_source: str = "simulated",
+    ) -> dict[str, Any]:
         """Refresh a single list and return the update result.
 
         Computes the SHA-256 checksum of the current entry data. If the checksum
         matches the stored value, the list has not changed and no update is needed.
         This avoids unnecessary DB writes and re-processing on every startup.
+
+        When data_source='live', source_url is the actual download URL used.
+        When data_source='simulated', source_url falls back to LIST_METADATA.
         """
-        # Compute checksum of current list data for change detection
+        # Compute SHA-256 checksum of current list data for change detection.
+        # sort_keys=True ensures the checksum is deterministic regardless of
+        # dict key insertion order (Python 3.7+ dicts are ordered but entries
+        # from different downloads may have different insertion orders).
         data_str = json.dumps(entries, sort_keys=True, default=str)
         checksum = hashlib.sha256(data_str.encode()).hexdigest()
         entry_count = len(entries)
         ts = now_wat()
 
-        # Get existing record to check if list has changed
+        # Get existing record to check if list has changed since last update.
         existing_lists = await list_screening_lists(self.db)
         existing = next((sl for sl in existing_lists if sl["list_name"] == list_name), None)
 
         if existing and existing.get("checksum") == checksum:
-            # List data unchanged — no update needed
+            # Checksum unchanged: list data is identical to the stored version.
+            # Return early to avoid redundant DB writes on every startup call.
             return {
                 "list_name": list_name,
                 "status": "unchanged",
                 "entry_count": entry_count,
                 "checksum": checksum,
+                "data_source": data_source,
             }
 
-        # List is new or changed — update the record
-        meta = LIST_METADATA.get(list_name, {})
+        # List is new or its checksum has changed: update the DB record.
+        # Prefer the caller-supplied source_url (live download URL) over metadata.
+        meta = LIST_METADATA.get(list_name.lower(), LIST_METADATA.get(list_name, {}))
+        effective_source_url = source_url or meta.get("source_url")
+
         await upsert_screening_list(self.db, {
             "list_name": list_name,
-            "version": ts[:10],  # Use date as version string (YYYY-MM-DD)
+            # Version is the date of the update. For live downloads this reflects
+            # the actual publication date (as far as the download timestamp indicates).
+            "version": ts[:10],  # YYYY-MM-DD
             "last_updated": ts,
             "entry_count": entry_count,
-            "source_url": meta.get("source_url"),
+            "source_url": effective_source_url,
             "checksum": checksum,
         })
 
@@ -141,4 +228,5 @@ class ListManager:
             "entry_count": entry_count,
             "checksum": checksum,
             "previous_checksum": existing.get("checksum") if existing else None,
+            "data_source": data_source,
         }

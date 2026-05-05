@@ -51,7 +51,7 @@ from datetime import timedelta, timezone
 
 import aiosqlite
 
-from src.data.sanctions_lists import SANCTIONS_DB
+from src.data.sanctions_lists import get_sanctions_db
 from src.database import (
     create_customer,
     create_escalation,
@@ -112,8 +112,13 @@ class OnboardingScreenerAgent:
         all_names = [request.name] + (request.aliases or [])
         matches: list[dict] = []
 
-        # Screen against every list in SANCTIONS_DB, collecting all matches above weak threshold
-        for list_name, entries in SANCTIONS_DB.items():
+        # Load the active sanctions database. Returns simulated data when
+        # LIVE_SANCTIONS=false (default), or cached live data when true.
+        # Falls back to simulated data if the live cache is unavailable.
+        sanctions_db = await get_sanctions_db()
+
+        # Screen against every list in the active DB, collecting all matches above weak threshold
+        for list_name, entries in sanctions_db.items():
             match_category = self._screener._list_to_category(list_name)
             for entry in entries:
                 best_score, best_name = self._screener._best_match_score(all_names, entry)

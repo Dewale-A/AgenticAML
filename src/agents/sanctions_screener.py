@@ -40,7 +40,7 @@ from difflib import SequenceMatcher
 
 import aiosqlite
 
-from src.data.sanctions_lists import SANCTIONS_DB
+from src.data.sanctions_lists import get_sanctions_db
 from src.database import create_sanctions_match, now_wat
 from src.governance.audit import log_agent_decision, log_sanctions_screening
 from src.models import (
@@ -90,9 +90,15 @@ class SanctionsScreenerAgent:
         # Include aliases in screening to catch known name variants
         all_names = [name] + (aliases or [])
         all_matches: list[SanctionsMatchResult] = []
-        lists_checked = list(SANCTIONS_DB.keys())
 
-        for list_name, entries in SANCTIONS_DB.items():
+        # Load the active sanctions database. When LIVE_SANCTIONS=false (default),
+        # this returns the simulated SANCTIONS_DB instantly with no I/O.
+        # When LIVE_SANCTIONS=true, this returns cached live data merged with
+        # local lists, falling back to simulated data if the cache is empty.
+        sanctions_db = await get_sanctions_db()
+        lists_checked = list(sanctions_db.keys())
+
+        for list_name, entries in sanctions_db.items():
             # Derive the match category from the list name.
             # This mapping drives the Watchlist Screening UI sub-category badges:
             # - sanctions (red): OFAC, UN, domestic sanctions lists
