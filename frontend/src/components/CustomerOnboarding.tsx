@@ -179,8 +179,19 @@ export default function CustomerOnboarding() {
     setFormError(null)
     setFormResult(null)
     try {
-      const result = await fetchAPI('/customers/onboard', form, 'POST')
-      setFormResult(result)
+      const raw = await fetchAPI('/customers/onboard', form, 'POST')
+      // The backend returns { result: { decision, decision_reason, screening_matches, ... }, governance: { ... } }
+      // Map to the shape the UI expects: status, message, screening_result, matches
+      const r = raw.result || raw
+      setFormResult({
+        status: r.decision || r.status || 'unknown',
+        message: r.decision_reason || r.message || '',
+        screening_result: r.decision_reason || '',
+        matches: r.screening_matches || [],
+        customer_id: r.customer_id || '',
+        risk_tier: r.risk_tier || '',
+        governance: raw.governance || null,
+      })
       // Refresh the queue so the new applicant appears immediately
       load()
     } catch (e: any) {
